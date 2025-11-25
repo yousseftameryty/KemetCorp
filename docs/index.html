@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KEMET // PROTOCOLS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <style>
+        /* BASE SETTINGS */
+        body { 
+            background-color: #050505; 
+            color: #e5e5e5; 
+            font-family: 'Inter', sans-serif; 
+            line-height: 1.6;
+        }
+        
+        /* SCROLL BEHAVIOR */
+        html { scroll-behavior: smooth; }
+        
+        /* CUSTOM SCROLLBAR */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* GRID LAYOUT */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 100vh;
+        }
+        @media (max-width: 768px) {
+            .layout-grid { grid-template-columns: 1fr; }
+            .sidebar { display: none; } /* Mobile Menu would go here */
+        }
+
+        /* TYPOGRAPHY */
+        h1 { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -0.05em; line-height: 1; }
+        h2 { font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; margin-top: 3rem; margin-bottom: 1rem; color: white; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        h3 { font-family: 'Inter', sans-serif; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.5rem; color: white; }
+        p, li { color: #a3a3a3; font-weight: 300; margin-bottom: 1rem; font-size: 0.95rem; }
+        .mono-highlight { font-family: 'JetBrains Mono', monospace; color: #22c55e; font-size: 0.8em; background: rgba(34, 197, 94, 0.1); padding: 2px 4px; border-radius: 2px; }
+
+        /* SIDEBAR NAV */
+        .sidebar {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            border-right: 1px solid #222;
+            padding: 40px 20px;
+            overflow-y: auto;
+            background: #000;
+        }
+        .nav-link {
+            display: block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 12px;
+            transition: 0.2s;
+            letter-spacing: 0.05em;
+        }
+        .nav-link:hover, .nav-link.active { color: white; transform: translateX(4px); }
+        .nav-link.active::before { content: '>'; margin-right: 5px; color: #22c55e; }
+
+        /* HEADER */
+        .doc-header {
+            border-bottom: 1px solid #222;
+            padding: 80px 0 40px 0;
+            margin-bottom: 40px;
+        }
+
+        /* PULSE DOT (Status) */
+        .status-dot {
+            width: 8px; height: 8px; background: #22c55e; border-radius: 50%;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+            animation: pulse 2s infinite;
+            display: inline-block; margin-right: 8px;
+        }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+
+    <div class="layout-grid">
+        
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="sidebar hidden md:block">
+            <div class="mb-10">
+                <a href="#" class="text-xl font-black tracking-tighter text-white">KEMET.</a>
+                <div class="text-[9px] font-mono text-gray-600 mt-2">LEGAL_ARCHIVE_V.4.0</div>
+            </div>
+
+            <div class="space-y-8">
+                <div>
+                    <span class="text-[9px] font-bold text-gray-700 uppercase tracking-widest mb-4 block">Core Documents</span>
+                    <a href="#tos" class="nav-link active">Terms of Service</a>
+                    <a href="#privacy" class="nav-link">Privacy Policy</a>
+                    <a href="#community" class="nav-link">Community Standards</a>
+                    <a href="#ip" class="nav-link">Intellectual Property</a>
+                </div>
+
+                <div>
+                    <span class="text-[9px] font-bold text-gray-700 uppercase tracking-widest mb-4 block">Data Governance</span>
+                    <a href="#cookies" class="nav-link">Cookie Policy</a>
+                    <a href="#requests" class="nav-link">Law Enforcement</a>
+                    <a href="#transparency" class="nav-link">Transparency Report</a>
+                </div>
+
+                <div class="mt-20">
+                     <a href="#" class="nav-link text-gray-500 hover:text-white">← Return to App</a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="w-full max-w-3xl mx-auto px-6 md:px-12 pb-24">
+            
+            <!-- DOCUMENT HEADER -->
+            <div class="doc-header">
+                <div class="flex items-center mb-4">
+                    <div class="status-dot"></div>
+                    <span class="text-[10px] font-mono text-green-500 uppercase tracking-widest">EFFECTIVE: OCTOBER 24, 2024</span>
+                </div>
+                <h1 class="text-5xl md:text-6xl text-white mb-6">Terms of Service.</h1>
+                <p class="text-lg text-gray-400 max-w-xl">
+                    By accessing KEMET, you agree to the protocols defined herein. 
+                    We prioritize signal over noise, and sovereignty over surveillance.
+                </p>
+                <div class="flex gap-4 mt-8">
+                    <button class="border border-white/20 hover:border-white px-4 py-2 text-[10px] font-mono uppercase text-white transition">
+                        Download PDF
+                    </button>
+                    <button class="border border-white/20 hover:border-white px-4 py-2 text-[10px] font-mono uppercase text-white transition">
+                        View Changelog
+                    </button>
+                </div>
+            </div>
+
+            <!-- CONTENT BLOCKS -->
+            <article>
+                
+                <section id="tos" class="mb-16">
+                    <h2 class="flex justify-between items-end">
+                        1. The Protocol (Acceptance)
+                        <span class="text-[10px] text-gray-600">REF: 1.0</span>
+                    </h2>
+                    <p>
+                        These Terms of Service ("Terms") cover your use of KEMET ("The Network"). 
+                        By creating a Node ID, you acknowledge that you have read and understood the <span class="mono-highlight">System Architecture</span>.
+                    </p>
+                    <h3>1.1 Access Eligibility</h3>
+                    <p>
+                        You must be at least 13 years old to use the Network. If you are creating a Node on behalf of a legal entity, you warrant that you have the authority to bind that entity to these Protocols.
+                    </p>
+                </section>
+
+                <section id="conduct" class="mb-16">
+                    <h2 class="flex justify-between items-end">
+                        2. Code of Conduct (Signal vs Noise)
+                        <span class="text-[10px] text-gray-600">REF: 2.0</span>
+                    </h2>
+                    <p>
+                        KEMET is designed for high-signal transmission. To maintain the integrity of the Wire, the following behaviors result in immediate Node termination:
+                    </p>
+                    <ul class="list-disc pl-5 space-y-2 marker:text-gray-600">
+                        <li><strong>Algorithmic Manipulation:</strong> Using bots, scripts, or coordinated clusters to artificially inflate Signal Velocity.</li>
+                        <li><strong>Noise Generation:</strong> Spam, repetitive broadcasting, or low-value data dumping.</li>
+                        <li><strong>Identity Spoofing:</strong> Impersonating Verified Nodes or System Admins.</li>
+                    </ul>
+                </section>
+
+                <section id="privacy" class="mb-16">
+                    <div class="bg-gray-900/30 border border-gray-800 p-8 rounded-sm">
+                        <h2 style="margin-top:0; border:none;" class="text-green-500">
+                            3. Data Sovereignty (Privacy)
+                        </h2>
+                        <p>
+                            Unlike legacy platforms, KEMET does not sell your behavioral data. Your interactions are encrypted.
+                        </p>
+                        <h3>3.1 What We Collect</h3>
+                        <p>
+                            We collect only the telemetry required to maintain System Health:
+                        </p>
+                        <div class="grid grid-cols-2 gap-4 mt-4 mb-4">
+                            <div class="p-4 border border-gray-700">
+                                <span class="block text-[10px] font-mono text-gray-500 uppercase">Visible Data</span>
+                                <span class="text-white text-sm">Profile, Signals, Links</span>
+                            </div>
+                            <div class="p-4 border border-gray-700">
+                                <span class="block text-[10px] font-mono text-gray-500 uppercase">Encrypted Data</span>
+                                <span class="text-white text-sm">Direct Messages, Location</span>
+                            </div>
+                        </div>
+                        <p>
+                            Please refer to the full <a href="#" class="text-white border-b border-gray-600 hover:border-white">Privacy Architecture</a> document for encryption specifics.
+                        </p>
+                    </div>
+                </section>
+
+                <section id="ip" class="mb-16">
+                    <h2 class="flex justify-between items-end">
+                        4. Intellectual Property
+                        <span class="text-[10px] text-gray-600">REF: 4.0</span>
+                    </h2>
+                    <p>
+                        You retain rights to any content you broadcast on the Network. By posting, you grant KEMET a worldwide, non-exclusive, royalty-free license to distribute said content within the Network.
+                    </p>
+                </section>
+
+                <section id="termination" class="mb-16">
+                    <h2 class="flex justify-between items-end">
+                        5. Termination (Kill Switch)
+                        <span class="text-[10px] text-gray-600">REF: 5.0</span>
+                    </h2>
+                    <p>
+                        You may terminate your Node at any time via the <span class="mono-highlight">CONFIGURE_NODE</span> interface. 
+                        Upon termination, your data is cryptographically shredded after a 30-day holding period.
+                    </p>
+                </section>
+
+            </article>
+
+            <!-- FOOTER -->
+            <footer class="mt-20 pt-10 border-t border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center text-gray-500 text-[10px] font-mono uppercase">
+                <div>
+                    © 2024 KEMET SYSTEMS INC.<br>
+                    TOKYO // SAN FRANCISCO // LONDON
+                </div>
+                <div class="mt-4 md:mt-0 flex gap-6">
+                    <a href="#" class="hover:text-white">Contact_Support</a>
+                    <a href="#" class="hover:text-white">System_Status</a>
+                    <a href="#" class="hover:text-white">Twitter_X</a>
+                </div>
+            </footer>
+
+        </main>
+    </div>
+
+    <script>
+        // Simple script to handle active link highlighting on scroll
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').includes(current)) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
