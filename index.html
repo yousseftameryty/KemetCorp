@@ -1,48 +1,140 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KEMET // PROTOCOLS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
     <style>
-        /* BASE SETTINGS */
-        body { 
-            background-color: #050505; 
-            color: #e5e5e5; 
-            font-family: 'Inter', sans-serif; 
-            line-height: 1.6;
+        body {
+            background-color: #050505;
+            color: #e5e5e5;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.7;
         }
-        
-        /* SCROLL BEHAVIOR */
-        html { scroll-behavior: smooth; }
-        
-        /* CUSTOM SCROLLBAR */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: #333; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
 
-        /* GRID LAYOUT */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #000;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
         .layout-grid {
             display: grid;
             grid-template-columns: 240px 1fr;
             min-height: 100vh;
         }
+
         @media (max-width: 768px) {
-            .layout-grid { grid-template-columns: 1fr; }
-            .sidebar { display: none; } /* Mobile Menu would go here */
+            .layout-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
         }
 
-        /* TYPOGRAPHY */
-        h1 { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -0.05em; line-height: 1; }
-        h2 { font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; margin-top: 3rem; margin-bottom: 1rem; color: white; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        h3 { font-family: 'Inter', sans-serif; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.5rem; color: white; }
-        p, li { color: #a3a3a3; font-weight: 300; margin-bottom: 1rem; font-size: 0.95rem; }
-        .mono-highlight { font-family: 'JetBrains Mono', monospace; color: #22c55e; font-size: 0.8em; background: rgba(34, 197, 94, 0.1); padding: 2px 4px; border-radius: 2px; }
+        h1 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            line-height: 1;
+        }
 
-        /* SIDEBAR NAV */
+        /* Section Headers */
+        h2 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.25rem;
+            margin-top: 4rem;
+            margin-bottom: 1.5rem;
+            color: white;
+            border-bottom: 1px solid #222;
+            padding-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Subheaders */
+        h3 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-top: 2.5rem;
+            margin-bottom: 0.75rem;
+            color: #fff;
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            color: #a3a3a3;
+            font-weight: 300;
+            margin-bottom: 1.25rem;
+            font-size: 0.95rem;
+        }
+
+        ul {
+            margin-bottom: 1.5rem;
+        }
+
+        li {
+            color: #a3a3a3;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        li::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: #22c55e;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8em;
+        }
+
+        .mono-highlight {
+            font-family: 'JetBrains Mono', monospace;
+            color: #22c55e;
+            font-size: 0.75em;
+            background: rgba(34, 197, 94, 0.1);
+            padding: 2px 6px;
+            border-radius: 2px;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            vertical-align: middle;
+        }
+
+        .mono-warn {
+            font-family: 'JetBrains Mono', monospace;
+            color: #ef4444;
+            font-size: 0.75em;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 2px 6px;
+            border-radius: 2px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
         .sidebar {
             position: sticky;
             top: 0;
@@ -52,203 +144,349 @@
             overflow-y: auto;
             background: #000;
         }
+
         .nav-link {
             display: block;
             font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
             text-transform: uppercase;
-            color: #666;
+            color: #555;
             margin-bottom: 12px;
             transition: 0.2s;
             letter-spacing: 0.05em;
+            text-decoration: none;
         }
-        .nav-link:hover, .nav-link.active { color: white; transform: translateX(4px); }
-        .nav-link.active::before { content: '>'; margin-right: 5px; color: #22c55e; }
 
-        /* HEADER */
+        .nav-link:hover,
+        .nav-link.active {
+            color: white;
+            transform: translateX(4px);
+        }
+
+        .nav-link.active::before {
+            content: '>';
+            margin-right: 5px;
+            color: #22c55e;
+        }
+
         .doc-header {
             border-bottom: 1px solid #222;
             padding: 80px 0 40px 0;
-            margin-bottom: 40px;
+            margin-bottom: 20px;
         }
 
-        /* PULSE DOT (Status) */
         .status-dot {
-            width: 8px; height: 8px; background: #22c55e; border-radius: 50%;
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
             box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
             animation: pulse 2s infinite;
-            display: inline-block; margin-right: 8px;
+            display: inline-block;
+            margin-right: 8px;
         }
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        .legal-box {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .section-number {
+            color: #444;
+            font-family: 'JetBrains Mono', monospace;
+            margin-right: 8px;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.5;
+            }
+        }
     </style>
 </head>
-<body>
 
+<body>
     <div class="layout-grid">
-        
-        <!-- SIDEBAR NAVIGATION -->
+        <!-- Sidebar -->
         <aside class="sidebar hidden md:block">
             <div class="mb-10">
                 <a href="#" class="text-xl font-black tracking-tighter text-white">KEMET.</a>
-                <div class="text-[9px] font-mono text-gray-600 mt-2">LEGAL_ARCHIVE_V.4.0</div>
+                <div class="text-[9px] font-mono text-gray-600 mt-2">LEGAL_ARCHIVE_V.5.0</div>
             </div>
-
             <div class="space-y-8">
                 <div>
-                    <span class="text-[9px] font-bold text-gray-700 uppercase tracking-widest mb-4 block">Core Documents</span>
-                    <a href="#tos" class="nav-link active">Terms of Service</a>
-                    <a href="#privacy" class="nav-link">Privacy Policy</a>
+                    <span class="text-[9px] font-bold text-gray-700 uppercase tracking-widest mb-4 block">Core
+                        Protocols</span>
+                    <a href="#tos" class="nav-link active">Terms & Conditions</a>
                     <a href="#community" class="nav-link">Community Standards</a>
-                    <a href="#ip" class="nav-link">Intellectual Property</a>
+                    <a href="#monetization" class="nav-link">Subscriptions</a>
+                    <a href="#ip" class="nav-link">API & IP</a>
                 </div>
-
                 <div>
-                    <span class="text-[9px] font-bold text-gray-700 uppercase tracking-widest mb-4 block">Data Governance</span>
-                    <a href="#cookies" class="nav-link">Cookie Policy</a>
+                    <span class="text-[9px] font-bold text-gray-700 uppercase tracking-widest mb-4 block">Data
+                        Governance</span>
+                    <a href="#privacy" class="nav-link">Privacy Policy</a>
+                    <a href="#data-use" class="nav-link">Data Usage</a>
                     <a href="#requests" class="nav-link">Law Enforcement</a>
-                    <a href="#transparency" class="nav-link">Transparency Report</a>
                 </div>
-
                 <div class="mt-20">
-                     <a href="#" class="nav-link text-gray-500 hover:text-white">← Return to App</a>
+                    <a href="#" class="nav-link text-gray-600 hover:text-white">← Return to App</a>
                 </div>
             </div>
         </aside>
 
-        <!-- MAIN CONTENT AREA -->
+        <!-- Main Content -->
         <main class="w-full max-w-3xl mx-auto px-6 md:px-12 pb-24">
-            
-            <!-- DOCUMENT HEADER -->
+
             <div class="doc-header">
-                <div class="flex items-center mb-4">
-                    <div class="status-dot"></div>
-                    <span class="text-[10px] font-mono text-green-500 uppercase tracking-widest">EFFECTIVE: OCTOBER 24, 2024</span>
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                    <div class="flex items-center">
+                        <div class="status-dot"></div>
+                        <span class="text-[10px] font-mono text-green-500 uppercase tracking-widest">ACTIVE
+                            PROTOCOL</span>
+                    </div>
+                    <div class="font-mono text-[10px] text-gray-600">
+                        ISSUED: 2025-11-25 // KEMET CORP
+                    </div>
                 </div>
-                <h1 class="text-5xl md:text-6xl text-white mb-6">Terms of Service.</h1>
+                <h1 class="text-5xl md:text-6xl text-white mb-6">Terms of Service & Privacy Policy</h1>
                 <p class="text-lg text-gray-400 max-w-xl">
-                    By accessing KEMET, you agree to the protocols defined herein. 
-                    We prioritize signal over noise, and sovereignty over surveillance.
+                    By accessing Kemet, you agree to the protocols defined herein. We prioritize signal over noise, and
+                    sovereignty over surveillance.
                 </p>
-                <div class="flex gap-4 mt-8">
-                    <button class="border border-white/20 hover:border-white px-4 py-2 text-[10px] font-mono uppercase text-white transition">
-                        Download PDF
-                    </button>
-                    <button class="border border-white/20 hover:border-white px-4 py-2 text-[10px] font-mono uppercase text-white transition">
-                        View Changelog
-                    </button>
-                </div>
             </div>
 
-            <!-- CONTENT BLOCKS -->
             <article>
-                
-                <section id="tos" class="mb-16">
-                    <h2 class="flex justify-between items-end">
-                        1. The Protocol (Acceptance)
-                        <span class="text-[10px] text-gray-600">REF: 1.0</span>
-                    </h2>
-                    <p>
-                        These Terms of Service ("Terms") cover your use of KEMET ("The Network"). 
-                        By creating a Node ID, you acknowledge that you have read and understood the <span class="mono-highlight">System Architecture</span>.
-                    </p>
-                    <h3>1.1 Access Eligibility</h3>
-                    <p>
-                        You must be at least 13 years old to use the Network. If you are creating a Node on behalf of a legal entity, you warrant that you have the authority to bind that entity to these Protocols.
-                    </p>
-                </section>
+                <!-- SECTION: TOS -->
+                <section id="tos">
+                    <h2>01 // INTRODUCTION <span class="mono-highlight">CORE</span></h2>
+                    <p>Welcome to Kemet ("the Service"). This document describes the Terms of Service ("Terms"), the
+                        Privacy Policy ("Privacy Terms"), and additional notices governing your use of Kemet, our
+                        websites, mobile applications, systems, features, algorithms, communications tools, subscription
+                        offerings, automated processes, and any other digital product operated by Kemet Corp ("we",
+                        "us", "our").</p>
+                    <p>By accessing or using the Service, you agree to be bound by these Terms and the Privacy Practices
+                        listed below. If you do not agree, you may not access the Service and must discontinue use
+                        immediately.</p>
+                    <div class="legal-box">
+                        <p class="text-xs font-mono uppercase text-gray-500 mb-2">Notice of Dynamic Service</p>
+                        <p class="!mb-0 text-sm">Kemet is a dynamic social platform with user-generated content,
+                            algorithmic discovery, AI-driven personalization, and location-based features. We retain the
+                            right to modify, suspend, update, or discontinue any part of it at any time, without notice,
+                            to the fullest extent permitted by law.</p>
+                    </div>
 
-                <section id="conduct" class="mb-16">
-                    <h2 class="flex justify-between items-end">
-                        2. Code of Conduct (Signal vs Noise)
-                        <span class="text-[10px] text-gray-600">REF: 2.0</span>
-                    </h2>
-                    <p>
-                        KEMET is designed for high-signal transmission. To maintain the integrity of the Wire, the following behaviors result in immediate Node termination:
+                    <h3>1.1 Minimum Age Requirements</h3>
+                    <p>You must be at least <span class="text-white font-bold">13 years old</span> to create an account
+                        and access general features of Kemet.</p>
+
+                    <h3>1.2 Tiered Feature Access</h3>
+                    <p>To comply with global online safety laws, Kemet restricts certain features based on age tiers:
                     </p>
-                    <ul class="list-disc pl-5 space-y-2 marker:text-gray-600">
-                        <li><strong>Algorithmic Manipulation:</strong> Using bots, scripts, or coordinated clusters to artificially inflate Signal Velocity.</li>
-                        <li><strong>Noise Generation:</strong> Spam, repetitive broadcasting, or low-value data dumping.</li>
-                        <li><strong>Identity Spoofing:</strong> Impersonating Verified Nodes or System Admins.</li>
+                    <ul class="list-none space-y-4 mt-4">
+                        <li>
+                            <span class="mono-highlight">16+ ONLY</span><br>
+                            Access to "sensitive" algorithmic content categories, public advertising campaigns,
+                            high-reach broadcast features, political commenting, and live location tagging.
+                        </li>
+                        <li>
+                            <span class="mono-highlight">18+ ONLY</span><br>
+                            Required to view NSFW non-pornographic content, subscribe to Kemet paid tiers, access
+                            explicit categories, enter monetization programs, and obtain business or government
+                            verification.
+                        </li>
                     </ul>
+
+                    <h3>1.3 Verification & Account Management</h3>
+                    <p>We may conduct soft or hard age verification checks. Failure to prove your stated age may result
+                        in restricting, disabling, or suspending certain features or your entire account.</p>
+                    <p><strong>Termination:</strong> We may suspend, restrict, or terminate your account with or without
+                        notice, with or without explanation, at our sole discretion. While we typically send a notice
+                        email, we are not obligated to do so.</p>
+                    <p><strong>Appeals:</strong> Some suspensions are appealable; the termination notice will state if
+                        this applies to you. Depending on the termination reason, you may be permanently banned from
+                        creating new accounts.</p>
+
+                    <h3>1.4 Liability & Warranties</h3>
+                    <p>Kemet is provided "AS IS" with no warranties of accuracy, availability, reliability, security, or
+                        non-interruption. Our maximum liability is limited to $0 or the amount you paid us, whichever is
+                        lower.</p>
                 </section>
 
-                <section id="privacy" class="mb-16">
-                    <div class="bg-gray-900/30 border border-gray-800 p-8 rounded-sm">
-                        <h2 style="margin-top:0; border:none;" class="text-green-500">
-                            3. Data Sovereignty (Privacy)
-                        </h2>
-                        <p>
-                            Unlike legacy platforms, KEMET does not sell your behavioral data. Your interactions are encrypted.
-                        </p>
-                        <h3>3.1 What We Collect</h3>
-                        <p>
-                            We collect only the telemetry required to maintain System Health:
-                        </p>
-                        <div class="grid grid-cols-2 gap-4 mt-4 mb-4">
-                            <div class="p-4 border border-gray-700">
-                                <span class="block text-[10px] font-mono text-gray-500 uppercase">Visible Data</span>
-                                <span class="text-white text-sm">Profile, Signals, Links</span>
-                            </div>
-                            <div class="p-4 border border-gray-700">
-                                <span class="block text-[10px] font-mono text-gray-500 uppercase">Encrypted Data</span>
-                                <span class="text-white text-sm">Direct Messages, Location</span>
-                            </div>
+                <!-- SECTION: COMMUNITY -->
+                <section id="community">
+                    <h2>02 // COMMUNITY STANDARDS <span class="mono-highlight">MODERATION</span></h2>
+
+                    <h3>2.1 Allowed Content</h3>
+                    <p>Kemet supports freedom of expression. Political speech, opinions, commentary, satire, and most
+                        categories of artistic or expressive content are permitted.</p>
+
+                    <h3>2.2 Prohibited Content</h3>
+                    <p>The following content is strictly forbidden. Violation leads to immediate termination:</p>
+                    <ul>
+                        <li>Pornography of any type (explicit sexual acts).</li>
+                        <li>Gore, graphic violence, dismemberment, or shock content.</li>
+                        <li>Child sexual content or exploitation.</li>
+                        <li>Real-world doxxing.</li>
+                        <li>Illegal activities or promotion thereof.</li>
+                        <li>Unauthorized automation (bots without our approval tag).</li>
+                    </ul>
+
+                    <h3>2.3 NSFW & Automation</h3>
+                    <p><strong>NSFW (18+):</strong> Permitted only if it contains no pornography, is behind age gating,
+                        follows community labeling rules, and respects local regulations.</p>
+                    <p><strong>Bots:</strong> Automated accounts are allowed if and only if they have a system-generated
+                        label indicating automation.</p>
+
+                    <h3>2.4 Content Removal Rights</h3>
+                    <p>We may remove any content for violating policies, being unsafe, misleading, harmful, or
+                        disturbing, for any reason or no reason, without explanation. You grant us permission to store,
+                        review, and moderate your content.</p>
+                </section>
+
+                <!-- SECTION: MONETIZATION -->
+                <section id="monetization">
+                    <h2>03 // SUBSCRIPTIONS & COMMERCE</h2>
+
+                    <h3>3.1 Tiers</h3>
+                    <p>We offer varying levels of service including Kemet (basic), Kemet+, Kemet++, Business
+                        Verification, and Government Verification.</p>
+
+                    <h3>3.2 Refund Policy</h3>
+                    <div class="legal-box border-red-900/30 bg-red-900/5">
+                        <span class="mono-warn mb-2 inline-block">STRICT POLICY</span>
+                        <p class="!mb-0 text-sm text-gray-300"><strong>No Refunds.</strong> Except where required by
+                            law, all purchases are final. Subscriptions renew automatically. Google Play / App Store
+                            rules override ours where applicable. Cancelling stops renewal but does not refund the
+                            current period.</p>
+                    </div>
+
+                    <h3>3.3 Creator Monetization</h3>
+                    <p>Coming soon. Eligibility will be restricted to users 18+ who meet community and quality
+                        thresholds.</p>
+                </section>
+
+                <!-- SECTION: PRIVACY -->
+                <section id="privacy">
+                    <h2>04 // PRIVACY POLICY <span class="mono-highlight">DATA</span></h2>
+                    <p>Kemet collects information necessary for functionality, personalization, safety, and analytics.
+                    </p>
+
+                    <h3>4.1 Information You Provide</h3>
+                    <ul>
+                        <li>Names (not necessarily real), Username, Bio.</li>
+                        <li>Photos, posts, videos.</li>
+                        <li>User preferences and settings.</li>
+                        <li>Country/state/city (only if provided).</li>
+                    </ul>
+
+                    <h3>4.2 Automatically Collected Data</h3>
+                    <p>We collect IP addresses, region-level geolocation, device information (OS, model), app events,
+                        diagnostic data, and content engagement patterns for algorithmic tuning.</p>
+
+                    <h3>4.3 What We DO NOT Collect</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="legal-box">
+                            <p class="!mb-0 text-sm">Precise GPS coordinates</p>
                         </div>
-                        <p>
-                            Please refer to the full <a href="#" class="text-white border-b border-gray-600 hover:border-white">Privacy Architecture</a> document for encryption specifics.
-                        </p>
+                        <div class="legal-box">
+                            <p class="!mb-0 text-sm">Real-world identity (unless verified)</p>
+                        </div>
+                        <div class="legal-box">
+                            <p class="!mb-0 text-sm">Private Keys</p>
+                        </div>
+                        <div class="legal-box">
+                            <p class="!mb-0 text-sm">Mic or Audio (without consent)</p>
+                        </div>
+                    </div>
+
+                    <h3>4.4 Encryption</h3>
+                    <p>Direct messages will be end-to-end encrypted from day one of rollout (where supported). This
+                        excludes private DMs from our algorithmic learning datasets.</p>
+
+                    <h3>4.5 Account Deletion</h3>
+                    <p>Users may delete their accounts at any time. We retain data for a <strong>90-day retention
+                            window</strong> post-deletion for safety investigations, legal obligations, or financial
+                        audits. After this period, data is permanently purged.</p>
+                </section>
+
+                <!-- SECTION: DATA USE -->
+                <section id="data-use">
+                    <h2>05 // DATA USAGE & AI</h2>
+                    <p>We use your data for personalized content ranking, moderation, advertising relevance, user
+                        verification, and machine learning model training.</p>
+                    <p>You grant us a global, royalty-free license to use your public content for algorithmic learning.
+                        This explicitly excludes private DMs and internal notes.</p>
+                </section>
+
+                <!-- SECTION: LAW ENFORCEMENT -->
+                <section id="requests">
+                    <h2>06 // SHARING & DISCLOSURE</h2>
+
+                    <h3>6.1 Third-Party Sharing</h3>
+                    <p>We share data with cloud hosting providers, analytics tools, moderation partners, payment
+                        processors, and advertising networks. All partners are required to provide adequate security
+                        protections.</p>
+
+                    <h3>6.2 Law Enforcement & Government</h3>
+                    <p>We comply with legitimate legal requests, including court orders, law enforcement requests, and
+                        emergency disclosure demands.</p>
+                    <div class="legal-box">
+                        <span class="mono-warn mb-2 inline-block">NOTIFICATION POLICY</span>
+                        <p class="!mb-0 text-sm text-gray-300">We typically do <strong>NOT</strong> notify users when
+                            governments request their data, unless required by specific local laws.</p>
                     </div>
                 </section>
 
-                <section id="ip" class="mb-16">
-                    <h2 class="flex justify-between items-end">
-                        4. Intellectual Property
-                        <span class="text-[10px] text-gray-600">REF: 4.0</span>
-                    </h2>
-                    <p>
-                        You retain rights to any content you broadcast on the Network. By posting, you grant KEMET a worldwide, non-exclusive, royalty-free license to distribute said content within the Network.
-                    </p>
-                </section>
-
-                <section id="termination" class="mb-16">
-                    <h2 class="flex justify-between items-end">
-                        5. Termination (Kill Switch)
-                        <span class="text-[10px] text-gray-600">REF: 5.0</span>
-                    </h2>
-                    <p>
-                        You may terminate your Node at any time via the <span class="mono-highlight">CONFIGURE_NODE</span> interface. 
-                        Upon termination, your data is cryptographically shredded after a 30-day holding period.
-                    </p>
+                <!-- SECTION: IP/API -->
+                <section id="ip">
+                    <h2>07 // API & INTELLECTUAL PROPERTY</h2>
+                    <p>We may offer APIs for post embedding, profile display, and analytics. We reserve the right to
+                        revoke API access at any time. All Kemet branding, algorithms, and system code remain the
+                        intellectual property of Kemet Corp.</p>
                 </section>
 
             </article>
 
-            <!-- FOOTER -->
-            <footer class="mt-20 pt-10 border-t border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center text-gray-500 text-[10px] font-mono uppercase">
+            <!-- Footer -->
+            <footer
+                class="mt-24 pt-10 border-t border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center text-gray-500 text-[10px] font-mono uppercase">
                 <div>
-                    © 2024 KEMET SYSTEMS INC.<br>
-                    TOKYO // SAN FRANCISCO // LONDON
+                    <span class="text-white block mb-1">KEMET CORP © 2025</span>
                 </div>
-                <div class="mt-4 md:mt-0 flex gap-6">
-                    <a href="#" class="hover:text-white">Contact_Support</a>
-                    <a href="#" class="hover:text-white">System_Status</a>
-                    <a href="#" class="hover:text-white">Twitter_X</a>
+                <div class="mt-6 md:mt-0 flex gap-8">
+                    <a href="#" class="hover:text-green-500 transition-colors">Contact_Support</a>
+                    <a href="#" class="hover:text-green-500 transition-colors">System_Status</a>
+                    <a href="" class="hover:text-green-500 transition-colors">Kemet</a>
                 </div>
             </footer>
-
         </main>
     </div>
 
     <script>
-        // Simple script to handle active link highlighting on scroll
+        // Smooth scrolling active state logic
         const sections = document.querySelectorAll('section');
         const navLinks = document.querySelectorAll('.nav-link');
 
         window.addEventListener('scroll', () => {
             let current = '';
+            const offset = 150; // Offset for sticky header/visual comfort
+
             sections.forEach(section => {
                 const sectionTop = section.offsetTop;
-                if (pageYOffset >= sectionTop - 100) {
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= (sectionTop - offset)) {
                     current = section.getAttribute('id');
                 }
             });
@@ -262,4 +500,5 @@
         });
     </script>
 </body>
+
 </html>
