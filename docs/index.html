@@ -1,505 +1,1109 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KEMET // PROTOCOLS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KEMET // DEPLOY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&family=JetBrains+Mono:wght@400;700&display=swap"
-        rel="stylesheet">                
-    <link rel="icon" type="image/x-icon" href="Kemet.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="icon" href="Kemet.png" type="image/x-icon">
     <style>
-        body {
-            background-color: #050505;
-            color: #e5e5e5;
-            font-family: 'Inter', sans-serif;
-            line-height: 1.7;
+        :root { --kemet-green: #22c55e; }
+        body { background-color: #000; color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; cursor: crosshair; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* === ATMOSPHERE === */
+        .noise {
+            position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+        .scanlines {
+            position: fixed; inset: 0; pointer-events: none; z-index: 40;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+        }
+        
+        /* === GIANT FOOTER LOGO === */
+        .giant-footer {
+            width: 100%; height: 60vh; position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            border-top: 1px solid #222; background: #020202;
+        }
+        .interactive-logo {
+            font-size: 15vw; font-weight: 900; letter-spacing: -0.05em;
+            color: transparent; -webkit-text-stroke: 2px #333;
+            transition: all 0.3s; cursor: default;
+            position: relative; z-index: 10;
+        }
+        .interactive-logo:hover {
+            color: var(--kemet-green); -webkit-text-stroke: 0px;
+            text-shadow: 0 0 50px rgba(34, 197, 94, 0.5);
+        }
+        /* Grid specifically for footer floor */
+        .footer-grid {
+            position: absolute; inset: 0; pointer-events: none; opacity: 0.3;
+            background-image: linear-gradient(#222 1px, transparent 1px), linear-gradient(90deg, #222 1px, transparent 1px);
+            background-size: 60px 60px;
+            transform: perspective(500px) rotateX(60deg) translateY(0);
+            transform-origin: bottom center;
         }
 
-        html {
-            scroll-behavior: smooth;
+        /* === TYPOGRAPHY === */
+        .glitch-text { position: relative; }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        .glitch-text::before { left: 2px; text-shadow: -1px 0 #ff00c1; clip-path: inset(44% 0 61% 0); animation: glitch-anim 2s infinite linear alternate-reverse; }
+        .glitch-text::after { left: -2px; text-shadow: -1px 0 #00fff9; clip-path: inset(54% 0 21% 0); animation: glitch-anim 2.5s infinite linear alternate-reverse; }
+        @keyframes glitch-anim { 0% { clip-path: inset(80% 0 2% 0); } 20% { clip-path: inset(12% 0 82% 0); } 40% { clip-path: inset(44% 0 11% 0); } 60% { clip-path: inset(62% 0 23% 0); } 80% { clip-path: inset(21% 0 54% 0); } 100% { clip-path: inset(3% 0 94% 0); } }
+
+        /* === 3D PHONE MOCKUP === */
+        .phone-container {
+            width: 300px; height: 600px;
+            background: #050505; border: 1px solid #333; border-radius: 40px;
+            position: relative; box-shadow: 0 0 0 2px #111, 0 30px 60px -15px rgba(0,0,0,0.9);
+            overflow: hidden; transition: transform 0.1s ease-out; transform-style: preserve-3d;
+        }
+        .notch {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 120px; height: 30px; background: #000;
+            border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; z-index: 50;
+        }
+        .app-screen { width: 100%; height: 100%; background: #000; position: relative; overflow: hidden; }
+        
+        /* The Internal App Header (Fixed inside phone) */
+        .app-header {
+            position: absolute; top: 0; left: 0; width: 100%; height: 80px; 
+            padding-top: 40px; padding-left: 20px; padding-right: 20px;
+            background: rgba(0,0,0,0.9); backdrop-filter: blur(4px);
+            z-index: 40; border-bottom: 1px solid #222;
+            display: flex; justify-content: space-between; align-items: center;
         }
 
-        ::-webkit-scrollbar {
-            width: 6px;
+        /* The Scrolling Feed */
+        .feed-track {
+            padding-top: 90px; /* Push below header */
+            padding-left: 0; 
+            padding-right: 0; 
+            animation: scroll-feed 12s linear infinite;
+        }
+        /* Duplicate content for seamless loop logic */
+        @keyframes scroll-feed {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); } /* Scrolls half height (the duplicate set) */
         }
 
-        ::-webkit-scrollbar-track {
-            background: #000;
+        /* Post Card Styling (matches PostCard.tsx exactly) */
+        .phone-post-card {
+            padding: 12px 16px; /* py-3 px-4 = 12px 16px */
+            background: #000; /* bg-black */
+            border-bottom: 1px solid #111827; /* border-gray-900 */
+            position: relative;
         }
-
-        ::-webkit-scrollbar-thumb {
-            background: #333;
+        .phone-post-avatar {
+            width: 40px; /* w-10 */
+            height: 40px; /* h-10 */
+            border-radius: 2px; /* rounded-sm */
+            background: #1f2937; /* bg-gray-800 */
+            object-fit: cover;
         }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
+        .phone-post-header {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            margin-bottom: 4px; /* mb-1 */
         }
-
-        .layout-grid {
-            display: grid;
-            grid-template-columns: 240px 1fr;
-            min-height: 100vh;
-        }
-
-        @media (max-width: 768px) {
-            .layout-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .sidebar {
-                display: none;
-            }
-        }
-
-        h1 {
-            font-family: 'Inter', sans-serif;
-            font-weight: 900;
-            letter-spacing: -0.05em;
-            line-height: 1;
-        }
-
-        /* Section Headers */
-        h2 {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.25rem;
-            margin-top: 4rem;
-            margin-bottom: 1.5rem;
+        .phone-post-display-name {
             color: white;
-            border-bottom: 1px solid #222;
-            padding-bottom: 12px;
+            font-weight: 700;
+            font-size: 14px; /* text-sm */
+            flex-shrink: 1;
+            margin-right: 4px;
+        }
+        .phone-post-handle {
+            color: #4b5563; /* text-gray-600 */
+            font-size: 12px; /* text-xs */
+            flex-shrink: 1;
+        }
+        .phone-post-time {
+            color: #4b5563; /* text-gray-600 */
+            font-size: 10px; /* text-[10px] */
+            font-family: 'JetBrains Mono', monospace;
+            flex-shrink: 0;
+        }
+        .phone-post-content {
+            color: white;
+            font-size: 14px; /* text-sm */
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+        .phone-post-footer {
+            margin-top: 8px; /* mt-2 */
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .phone-post-metrics {
+            display: flex;
+            flex-direction: row;
+            gap: 20px; /* gap-5 */
+        }
+        .phone-post-metric {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            gap: 6px; /* gap-1.5 */
         }
-
-        /* Subheaders */
-        h3 {
-            font-family: 'Inter', sans-serif;
+        .phone-post-metric-text {
+            color: #4b5563; /* text-gray-600 */
+            font-size: 10px; /* text-[10px] */
+            font-family: 'JetBrains Mono', monospace;
             font-weight: 700;
-            font-size: 1.1rem;
-            margin-top: 2.5rem;
-            margin-bottom: 0.75rem;
-            color: #fff;
-            letter-spacing: -0.02em;
         }
 
-        p {
-            color: #a3a3a3;
-            font-weight: 300;
-            margin-bottom: 1.25rem;
-            font-size: 0.95rem;
+        /* === DOWNLOAD BUTTON (The Trigger) === */
+        .download-btn {
+            position: relative; overflow: hidden;
+            background: white; color: black;
+            font-family: 'JetBrains Mono'; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         }
-
-        ul {
-            margin-bottom: 1.5rem;
+        .download-btn::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: var(--kemet-green); transition: transform 0.4s ease; z-index: 0;
         }
+        .download-btn:hover::before { transform: translateX(100%); }
+        .download-btn span { position: relative; z-index: 10; }
+        .download-btn:hover span { color: black; }
 
-        li {
-            color: #a3a3a3;
-            font-weight: 300;
-            margin-bottom: 0.5rem;
-            font-size: 0.95rem;
-            position: relative;
-            padding-left: 1.5rem;
-        }
-
-        li::before {
-            content: '>';
-            position: absolute;
-            left: 0;
-            color: #22c55e;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8em;
-        }
-
-        .mono-highlight {
-            font-family: 'JetBrains Mono', monospace;
-            color: #22c55e;
-            font-size: 0.75em;
-            background: rgba(34, 197, 94, 0.1);
-            padding: 2px 6px;
-            border-radius: 2px;
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            vertical-align: middle;
-        }
-
-        .mono-warn {
-            font-family: 'JetBrains Mono', monospace;
-            color: #ef4444;
-            font-size: 0.75em;
-            background: rgba(239, 68, 68, 0.1);
-            padding: 2px 6px;
-            border-radius: 2px;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .sidebar {
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            border-right: 1px solid #222;
-            padding: 40px 20px;
-            overflow-y: auto;
-            background: #000;
-        }
-
-        .nav-link {
-            display: block;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            text-transform: uppercase;
-            color: #555;
-            margin-bottom: 12px;
-            transition: 0.2s;
-            letter-spacing: 0.05em;
-            text-decoration: none;
-        }
-
-        .nav-link:hover,
-        .nav-link.active {
-            color: white;
-            transform: translateX(4px);
-        }
-
-        .nav-link.active::before {
-            content: '>';
-            margin-right: 5px;
-            color: #22c55e;
-        }
-
-        .doc-header {
+        /* === STATS DASHBOARD === */
+        .stats-dashboard {
+            width: 100%;
+            background: #0a0a0a;
+            border-top: 1px solid #222;
             border-bottom: 1px solid #222;
-            padding: 80px 0 40px 0;
-            margin-bottom: 20px;
+            padding: 40px 0;
         }
-
-        .status-dot {
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .stat-card {
+            text-align: center;
+            padding: 24px 16px;
+            border: 1px solid #222;
+            background: #050505;
+            transition: all 0.3s;
+            min-height: 140px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        .stat-card:hover {
+            border-color: #333;
+            background: #0a0a0a;
+        }
+        .stat-label {
+            font-size: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 12px;
+            line-height: 1.4;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        .stat-value {
+            font-size: 48px;
+            font-weight: 900;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.1;
+            margin-bottom: 8px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            min-height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .stat-value.green { color: #22c55e; }
+        .stat-value.white { color: #fff; }
+        .stat-sublabel {
+            font-size: 9px;
+            font-family: 'JetBrains Mono', monospace;
+            color: #444;
+            text-transform: uppercase;
+            line-height: 1.4;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        .stat-pulse {
+            display: inline-block;
             width: 8px;
             height: 8px;
             background: #22c55e;
             border-radius: 50%;
-            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+            margin-left: 8px;
             animation: pulse 2s infinite;
-            display: inline-block;
-            margin-right: 8px;
+            vertical-align: middle;
         }
+        
+        /* === PULSE DOT (Integrated) === */
+        .core-dot { width: 10px; height: 10px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 15px #22c55e; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
 
-        .legal-box {
-            background: #0a0a0a;
-            border: 1px solid #222;
-            padding: 20px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-        }
-
-        .section-number {
-            color: #444;
-            font-family: 'JetBrains Mono', monospace;
-            margin-right: 8px;
-        }
-
-        @keyframes pulse {
-            0% {
-                opacity: 0.5;
-            }
-
-            50% {
-                opacity: 1;
-            }
-
-            100% {
-                opacity: 0.5;
-            }
-        }
     </style>
 </head>
+<body class="selection:bg-green-500 selection:text-black">
 
-<body>
-    <div class="layout-grid">
-        <!-- Sidebar -->
-        <aside class="sidebar hidden md:block">
-            <div class="mb-10">
-                <a href="#" class="text-xl font-black tracking-tighter text-white">KEMET.</a>
-                <div class="text-[9px] font-mono text-gray-600 mt-2">LEGAL_ARCHIVE_V.5.0</div>
+    <div class="noise"></div>
+    <div class="scanlines"></div>
+
+    <!-- NAVBAR -->
+    <nav class="fixed top-0 w-full z-50 px-6 py-6 flex justify-between items-center mix-blend-difference">
+        <div class="flex items-center gap-3">
+            <div class="core-dot"></div>
+            <h1 class="text-xl font-black tracking-tighter">KEMET.</h1>
+        </div>
+        <div class="hidden md:flex gap-8 text-[10px] font-mono text-gray-400 uppercase tracking-widest">
+            <a href="#features" class="hover:text-white hover:underline decoration-green-500 underline-offset-4 transition">Protocol</a>
+            <a href="#stats" class="hover:text-white hover:underline decoration-green-500 underline-offset-4 transition">Live_Data</a>
+            <span class="text-green-500">V.2.0.4 (STABLE)</span>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <main class="relative z-10 w-full min-h-screen flex flex-col lg:flex-row items-center justify-center pt-24 pb-10 px-6 max-w-7xl mx-auto gap-12 lg:gap-24">
+        
+        <!-- LEFT: TEXT & ACTION -->
+        <div class="flex-1 flex flex-col items-start space-y-8">
+            <div class="inline-block border border-green-900 bg-green-900/10 px-3 py-1">
+                <p class="text-[9px] font-mono text-green-500 uppercase tracking-widest blink">
+                    > SYSTEM_READY_FOR_INJECTION
+                </p>
             </div>
-            <div class="space-y-8">
-                <div>
-                    <span class="text-[9px] font-bold text-gray-700 uppercase tracking-widest mb-4 block">Core
-                        Protocols</span>
-                    <a href="#tos" class="nav-link active">Terms & Conditions</a>
-                    <a href="#community" class="nav-link">Community Standards</a>
-                    <a href="#monetization" class="nav-link">Subscriptions</a>
-                    <a href="#ip" class="nav-link">API & IP</a>
+            
+            <h1 class="text-6xl lg:text-8xl font-black tracking-tighter leading-[0.9] uppercase glitch-text" data-text="THE SIGNAL IS WAITING.">
+                The Signal<br>Is Waiting.
+            </h1>
+            
+            <p class="text-sm text-gray-400 font-mono max-w-md leading-relaxed border-l-2 border-green-800 pl-4">
+                The algorithm is dead. Curate your reality. Join the encrypted network where silence is luxury and data is sovereign.
+            </p>
+
+            <div class="flex flex-col w-full max-w-md gap-4">
+                <!-- DOWNLOAD BUTTON -->
+                <button id="dl-btn" onclick="startDownload()" class="download-btn w-full h-16 text-lg flex items-center justify-center gap-3">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>Download .APK</span>
+                </button>
+                
+                <div class="flex justify-between text-[9px] font-mono text-gray-600 uppercase">
+                    <span>Build: <span id="build-version">Loading...</span></span>
+                    <span>Size: <span id="apk-size">Loading...</span></span>
+                    <span>Android <span id="android-version">10</span>+</span>
                 </div>
-                <div>
-                    <span class="text-[9px] font-bold text-gray-700 uppercase tracking-widest mb-4 block">Data
-                        Governance</span>
-                    <a href="#privacy" class="nav-link">Privacy Policy</a>
-                    <a href="#data-use" class="nav-link">Data Usage</a>
-                    <a href="#requests" class="nav-link">Law Enforcement</a>
-                </div>
-                <div class="mt-20">
-                    <a href="#" class="nav-link text-gray-600 hover:text-white">← Return to App</a>
+
+                <!-- Fake Terminal Progress (Hidden initially) -->
+                <div id="dl-terminal" class="hidden w-full bg-[#0a0a0a] border border-gray-800 p-4 font-mono text-[10px] text-green-500 space-y-1">
+                    <p id="dl-status">> CONNECTING_TO_KEMET_SERVERS...</p>
+                    <div class="w-full h-1 bg-gray-800 mt-2"><div id="dl-bar" class="h-full bg-green-500 w-0 transition-all duration-[2000ms]"></div></div>
                 </div>
             </div>
-        </aside>
+        </div>
 
-        <!-- Main Content -->
-        <main class="w-full max-w-3xl mx-auto px-6 md:px-12 pb-24">
+        <!-- RIGHT: 3D PHONE MOCKUP -->
+        <div id="tilt-wrapper" class="flex-1 flex justify-center items-center perspective-1000">
+            <div class="phone-container">
+                <div class="notch"></div>
+                
+                <!-- INTERNAL APP SCREEN -->
+                <div class="app-screen">
+                    
+                    <!-- 1. Sticky Header inside Phone -->
+                    <div class="app-header">
+                        <span class="font-bold tracking-tighter text-white">KEMET.</span>
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_#22c55e]"></div>
+                    </div>
 
-            <div class="doc-header">
-                <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-                    <div class="flex items-center">
-                        <div class="status-dot"></div>
-                        <span class="text-[10px] font-mono text-green-500 uppercase tracking-widest">ACTIVE
-                            PROTOCOL</span>
+                    <!-- 2. Infinite Scrolling Feed (Loaded from DB) -->
+                    <div id="feed-track" class="feed-track space-y-4">
+                        <!-- Posts will be loaded here dynamically -->
+                        <div class="text-center text-gray-600 text-xs py-8">Loading feed...</div>
                     </div>
-                    <div class="font-mono text-[10px] text-gray-600">
-                        ISSUED: 2025-11-25 // KEMET CORP
-                    </div>
+                    
+                    <!-- Fade Gradient at Bottom -->
+                    <div class="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-black to-transparent z-20"></div>
                 </div>
-                <h1 class="text-5xl md:text-6xl text-white mb-6">Terms of Service & Privacy Policy</h1>
-                <p class="text-lg text-gray-400 max-w-xl">
-                    By accessing Kemet, you agree to the protocols defined herein. We prioritize signal over noise, and
-                    sovereignty over surveillance.
+            </div>
+        </div>
+
+    </main>
+
+    <!-- LIVE STATS DASHBOARD -->
+    <div id="stats" class="stats-dashboard relative z-20">
+        <div class="stats-grid">
+            <!-- Active Nodes -->
+            <div class="stat-card">
+                <div class="stat-label">Active Nodes</div>
+                <div class="stat-value white" id="stat-nodes">
+                    <span>0</span><span class="stat-pulse"></span>
+                </div>
+                <div class="stat-sublabel">Connected Users</div>
+            </div>
+
+            <!-- Signals Per Second -->
+            <div class="stat-card">
+                <div class="stat-label">Signals Per Second</div>
+                <div class="stat-value green" id="stat-signals">0</div>
+                <div class="stat-sublabel">Network Activity</div>
+            </div>
+
+            <!-- Server Load -->
+            <div class="stat-card">
+                <div class="stat-label">Server Load</div>
+                <div class="stat-value green" id="stat-load">0%</div>
+                <div class="stat-sublabel">System Capacity</div>
+            </div>
+
+            <!-- Encryption -->
+            <div class="stat-card">
+                <div class="stat-label">Encryption</div>
+                <div class="stat-value white">AES-256</div>
+                <div class="stat-sublabel">Standard</div>
+            </div>
+
+            <!-- Region -->
+            <div class="stat-card">
+                <div class="stat-label">Region</div>
+                <div class="stat-value white">GLOBAL</div>
+                <div class="stat-sublabel">Network Coverage</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FEATURES GRID -->
+    <section id="features" class="max-w-7xl mx-auto px-6 py-24 relative z-10 border-t border-gray-900">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+            
+            <!-- Feature 1 -->
+            <div class="group cursor-default">
+                <div class="w-12 h-12 border border-gray-700 bg-gray-900 flex items-center justify-center mb-6 group-hover:border-white transition-colors">
+                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h3 class="text-lg font-bold mb-2 uppercase">Zero-Knowledge</h3>
+                <p class="text-xs text-gray-500 font-mono leading-relaxed">
+                    We don't sell your eyes. Your data is encrypted locally before it ever touches our servers.
                 </p>
             </div>
 
-            <article>
-                <!-- SECTION: TOS -->
-                <section id="tos">
-                    <h2>01 // INTRODUCTION <span class="mono-highlight">CORE</span></h2>
-                    <p>Welcome to Kemet ("the Service"). This document describes the Terms of Service ("Terms"), the
-                        Privacy Policy ("Privacy Terms"), and additional notices governing your use of Kemet, our
-                        websites, mobile applications, systems, features, algorithms, communications tools, subscription
-                        offerings, automated processes, and any other digital product operated by Kemet Corp ("we",
-                        "us", "our").</p>
-                    <p>By accessing or using the Service, you agree to be bound by these Terms and the Privacy Practices
-                        listed below. If you do not agree, you may not access the Service and must discontinue use
-                        immediately.</p>
-                    <div class="legal-box">
-                        <p class="text-xs font-mono uppercase text-gray-500 mb-2">Notice of Dynamic Service</p>
-                        <p class="!mb-0 text-sm">Kemet is a dynamic social platform with user-generated content,
-                            algorithmic discovery, AI-driven personalization, and location-based features. We retain the
-                            right to modify, suspend, update, or discontinue any part of it at any time, without notice,
-                            to the fullest extent permitted by law.</p>
-                    </div>
-
-                    <h3>1.1 Minimum Age Requirements</h3>
-                    <p>You must be at least <span class="text-white font-bold">13 years old</span> to create an account
-                        and access general features of Kemet.</p>
-
-                    <h3>1.2 Tiered Feature Access</h3>
-                    <p>To comply with global online safety laws, Kemet restricts certain features based on age tiers:
-                    </p>
-                    <ul class="list-none space-y-4 mt-4">
-                        <li>
-                            <span class="mono-highlight">16+ ONLY</span><br>
-                            Access to "sensitive" algorithmic content categories, public advertising campaigns,
-                            high-reach broadcast features, political commenting, and live location tagging.
-                        </li>
-                        <li>
-                            <span class="mono-highlight">18+ ONLY</span><br>
-                            Required to view NSFW non-pornographic content, subscribe to Kemet paid tiers, access
-                            explicit categories, enter monetization programs, and obtain business or government
-                            verification.
-                        </li>
-                    </ul>
-
-                    <h3>1.3 Verification & Account Management</h3>
-                    <p>We may conduct soft or hard age verification checks. Failure to prove your stated age may result
-                        in restricting, disabling, or suspending certain features or your entire account.</p>
-                    <p><strong>Termination:</strong> We may suspend, restrict, or terminate your account with or without
-                        notice, with or without explanation, at our sole discretion. While we typically send a notice
-                        email, we are not obligated to do so.</p>
-                    <p><strong>Appeals:</strong> Some suspensions are appealable; the termination notice will state if
-                        this applies to you. Depending on the termination reason, you may be permanently banned from
-                        creating new accounts.</p>
-
-                    <h3>1.4 Liability & Warranties</h3>
-                    <p>Kemet is provided "AS IS" with no warranties of accuracy, availability, reliability, security, or
-                        non-interruption. Our maximum liability is limited to $0 or the amount you paid us, whichever is
-                        lower.</p>
-                </section>
-
-                <!-- SECTION: COMMUNITY -->
-                <section id="community">
-                    <h2>02 // COMMUNITY STANDARDS <span class="mono-highlight">MODERATION</span></h2>
-
-                    <h3>2.1 Allowed Content</h3>
-                    <p>Kemet supports freedom of expression. Political speech, opinions, commentary, satire, and most
-                        categories of artistic or expressive content are permitted.</p>
-
-                    <h3>2.2 Prohibited Content</h3>
-                    <p>The following content is strictly forbidden. Violation leads to immediate termination:</p>
-                    <ul>
-                        <li>Pornography of any type (explicit sexual acts).</li>
-                        <li>Gore, graphic violence, dismemberment, or shock content.</li>
-                        <li>Child sexual content or exploitation.</li>
-                        <li>Real-world doxxing.</li>
-                        <li>Illegal activities or promotion thereof.</li>
-                        <li>Unauthorized automation (bots without our approval tag).</li>
-                    </ul>
-
-                    <h3>2.3 NSFW & Automation</h3>
-                    <p><strong>NSFW (18+):</strong> Permitted only if it contains no pornography, is behind age gating,
-                        follows community labeling rules, and respects local regulations.</p>
-                    <p><strong>Bots:</strong> Automated accounts are allowed if and only if they have a system-generated
-                        label indicating automation.</p>
-
-                    <h3>2.4 Content Removal Rights</h3>
-                    <p>We may remove any content for violating policies, being unsafe, misleading, harmful, or
-                        disturbing, for any reason or no reason, without explanation. You grant us permission to store,
-                        review, and moderate your content.</p>
-                </section>
-
-                <!-- SECTION: MONETIZATION -->
-                <section id="monetization">
-                    <h2>03 // SUBSCRIPTIONS & COMMERCE</h2>
-
-                    <h3>3.1 Tiers</h3>
-                    <p>We offer varying levels of service including Kemet (basic), Kemet+, Kemet++, Business
-                        Verification, and Government Verification.</p>
-
-                    <h3>3.2 Refund Policy</h3>
-                    <div class="legal-box border-red-900/30 bg-red-900/5">
-                        <span class="mono-warn mb-2 inline-block">STRICT POLICY</span>
-                        <p class="!mb-0 text-sm text-gray-300"><strong>No Refunds.</strong> Except where required by
-                            law, all purchases are final. Subscriptions renew automatically. Google Play / App Store
-                            rules override ours where applicable. Cancelling stops renewal but does not refund the
-                            current period.</p>
-                    </div>
-
-                    <h3>3.3 Creator Monetization</h3>
-                    <p>Coming soon. Eligibility will be restricted to users 18+ who meet community and quality
-                        thresholds.</p>
-                </section>
-
-                <!-- SECTION: PRIVACY -->
-                <section id="privacy">
-                    <h2>04 // PRIVACY POLICY <span class="mono-highlight">DATA</span></h2>
-                    <p>Kemet collects information necessary for functionality, personalization, safety, and analytics.
-                    </p>
-
-                    <h3>4.1 Information You Provide</h3>
-                    <ul>
-                        <li>Names (not necessarily real), Username, Bio.</li>
-                        <li>Photos, posts, videos.</li>
-                        <li>User preferences and settings.</li>
-                        <li>Country/state/city (only if provided).</li>
-                    </ul>
-
-                    <h3>4.2 Automatically Collected Data</h3>
-                    <p>We collect IP addresses, region-level geolocation, device information (OS, model), app events,
-                        diagnostic data, and content engagement patterns for algorithmic tuning.</p>
-
-                    <h3>4.3 What We DO NOT Collect</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="legal-box">
-                            <p class="!mb-0 text-sm">Precise GPS coordinates</p>
-                        </div>
-                        <div class="legal-box">
-                            <p class="!mb-0 text-sm">Real-world identity (unless verified)</p>
-                        </div>
-                        <div class="legal-box">
-                            <p class="!mb-0 text-sm">Private Keys</p>
-                        </div>
-                        <div class="legal-box">
-                            <p class="!mb-0 text-sm">Mic or Audio (without consent)</p>
-                        </div>
-                    </div>
-
-                    <h3>4.4 Encryption</h3>
-                    <p>Direct messages will be end-to-end encrypted from day one of rollout (where supported). This
-                        excludes private DMs from our algorithmic learning datasets.</p>
-
-                    <h3>4.5 Account Deletion</h3>
-                    <p>Users may delete their accounts at any time. We retain data for a <strong>90-day retention
-                            window</strong> post-deletion for safety investigations, legal obligations, or financial
-                        audits. After this period, data is permanently purged.</p>
-                </section>
-
-                <!-- SECTION: DATA USE -->
-                <section id="data-use">
-                    <h2>05 // DATA USAGE & AI</h2>
-                    <p>We use your data for personalized content ranking, moderation, advertising relevance, user
-                        verification, and machine learning model training.</p>
-                    <p>You grant us a global, royalty-free license to use your public content for algorithmic learning.
-                        This explicitly excludes private DMs and internal notes.</p>
-                </section>
-
-                <!-- SECTION: LAW ENFORCEMENT -->
-                <section id="requests">
-                    <h2>06 // SHARING & DISCLOSURE</h2>
-
-                    <h3>6.1 Third-Party Sharing</h3>
-                    <p>We share data with cloud hosting providers, analytics tools, moderation partners, payment
-                        processors, and advertising networks. All partners are required to provide adequate security
-                        protections.</p>
-
-                    <h3>6.2 Law Enforcement & Government</h3>
-                    <p>We comply with legitimate legal requests, including court orders, law enforcement requests, and
-                        emergency disclosure demands.</p>
-                    <div class="legal-box">
-                        <span class="mono-warn mb-2 inline-block">NOTIFICATION POLICY</span>
-                        <p class="!mb-0 text-sm text-gray-300">We typically do <strong>NOT</strong> notify users when
-                            governments request their data, unless required by specific local laws.</p>
-                    </div>
-                </section>
-
-                <!-- SECTION: IP/API -->
-                <section id="ip">
-                    <h2>07 // API & INTELLECTUAL PROPERTY</h2>
-                    <p>We may offer APIs for post embedding, profile display, and analytics. We reserve the right to
-                        revoke API access at any time. All Kemet branding, algorithms, and system code remain the
-                        intellectual property of Kemet Corp.</p>
-                </section>
-
-            </article>
-
-            <!-- Footer -->
-            <footer
-                class="mt-24 pt-10 border-t border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center text-gray-500 text-[10px] font-mono uppercase">
-                <div>
-                    <span class="text-white block mb-1">KEMET CORP © 2025</span>
+            <!-- Feature 2 -->
+            <div class="group cursor-default">
+                <div class="w-12 h-12 border border-gray-700 bg-gray-900 flex items-center justify-center mb-6 group-hover:border-white transition-colors">
+                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
                 </div>
-                <div class="mt-6 md:mt-0 flex gap-8">
-                    <a href="#" class="hover:text-green-500 transition-colors">Contact_Support</a>
-                    <a href="#" class="hover:text-green-500 transition-colors">System_Status</a>
-                    <a href="" class="hover:text-green-500 transition-colors">Kemet</a>
+                <div class="flex items-center gap-2 mb-2">
+                    <h3 class="text-lg font-bold uppercase">No Algorithm</h3>
+                    <span class="bg-red-900/50 text-red-500 text-[8px] font-mono px-1 border border-red-800">KILL_SWITCH</span>
                 </div>
-            </footer>
-        </main>
-    </div>
+                <p class="text-xs text-gray-500 font-mono leading-relaxed">
+                    A pure chronological feed. You see what you follow. No manipulation. No dopamine loops.
+                </p>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="group cursor-default">
+                <div class="w-12 h-12 border border-gray-700 bg-gray-900 flex items-center justify-center mb-6 group-hover:border-white transition-colors">
+                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                </div>
+                <h3 class="text-lg font-bold mb-2 uppercase">The Protocol</h3>
+                <p class="text-xs text-gray-500 font-mono leading-relaxed">
+                    A new standard for digital interaction. Focus on signal, discard the noise.
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- GIANT INTERACTIVE FOOTER -->
+    <footer class="giant-footer">
+        <div class="footer-grid"></div>
+        
+        <!-- The Logo -->
+        <h1 class="interactive-logo" id="big-logo">KEMET.</h1>
+        
+        <!-- Bottom Links -->
+        <div class="absolute bottom-10 w-full flex justify-between px-10 text-[10px] font-mono text-gray-600 uppercase z-20">
+            <span>© 2024 KEMET SYSTEMS. ALL RIGHTS RESERVED.</span>
+            <div class="flex gap-6">
+                <a href="#" class="hover:text-white transition">Manifesto</a>
+                <a href="#" class="hover:text-white transition"></a>
+                <a href="#" class="hover:text-white transition">Contact</a>
+            </div>
+        </div>
+    </footer>
 
     <script>
-        // Smooth scrolling active state logic
-        const sections = document.querySelectorAll('section');
-        const navLinks = document.querySelectorAll('.nav-link');
+        // ============================================
+        // SUPABASE CONFIGURATION
+        // ============================================
+        // ⚠️ SECURITY NOTE: The anon key is SAFE to expose publicly!
+        // It's designed to be in client-side code. Security is handled by:
+        // 1. Row Level Security (RLS) policies in Supabase
+        // 2. The anon key has limited permissions
+        // 3. Never expose the service_role key (that's server-side only)
+        
+        const SUPABASE_URL = 'https://gqxsrxadgsehcwjhsgor.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxeHNyeGFkZ3NlaGN3amhzZ29yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4MDQ3MTcsImV4cCI6MjA3OTM4MDcxN30.Z1JwUBXrUQ2bKuQdUt0coq3kn-UgfQUnePGluYfWJxA';
+        
+        // Initialize Supabase client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        window.addEventListener('scroll', () => {
-            let current = '';
-            const offset = 150; // Offset for sticky header/visual comfort
+        // ============================================
+        // APP CONFIGURATION (from Supabase)
+        // ============================================
+        let appConfig = {
+            apkUrl: '/kemet_release_v2.apk', // Default fallback
+            buildVersion: '8492_A',
+            apkSize: '42MB',
+            androidVersion: '10'
+        };
 
-            sections.forEach(section => {
-                const sectionTop = section.offsetTop;
-                const sectionHeight = section.clientHeight;
-                if (pageYOffset >= (sectionTop - offset)) {
-                    current = section.getAttribute('id');
+        // Fetch latest release from database
+        async function fetchAppRelease() {
+            try {
+                const { data: release, error } = await supabase
+                    .from('app_releases')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (error) {
+                    console.warn('Error fetching release:', error);
+                    return; // Use defaults
                 }
-            });
 
-            navLinks.forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('href').includes(current)) {
-                    link.classList.add('active');
+                if (release) {
+                    // Update config
+                    appConfig.apkUrl = release.apk_url;
+                    appConfig.buildVersion = release.build_number;
+                    appConfig.apkSize = release.apk_size_mb ? `${release.apk_size_mb}MB` : 'N/A';
+                    appConfig.androidVersion = release.android_min_version;
+
+                    // Update UI
+                    const buildEl = document.getElementById('build-version');
+                    const sizeEl = document.getElementById('apk-size');
+                    const androidEl = document.getElementById('android-version');
+                    
+                    if (buildEl) buildEl.textContent = release.build_number;
+                    if (sizeEl) sizeEl.textContent = release.apk_size_mb ? `${release.apk_size_mb}MB` : 'N/A';
+                    if (androidEl) androidEl.textContent = release.android_min_version;
+                    
+                    console.log('✅ App release loaded:', release);
+                } else {
+                    console.warn('⚠️ No active release found, using defaults');
                 }
-            });
+            } catch (error) {
+                console.error('Error fetching app release:', error);
+            }
+        }
+
+        // ============================================
+        // REAL-TIME STATS FETCHING (VERY REALTIME)
+        // ============================================
+        let statsUpdateInterval = null;
+
+        async function fetchNetworkStats() {
+            try {
+                console.log('🔄 Fetching network stats...');
+                
+                // Fetch network stats (public read, protected by RLS)
+                // Use maybeSingle() to handle case where row doesn't exist or RLS blocks it
+                const { data: stats, error } = await supabase
+                    .from('network_stats')
+                    .select('*')
+                    .eq('id', 1)
+                    .maybeSingle();
+
+                if (error) {
+                    console.error('❌ Network stats error:', error);
+                    // Don't throw - continue with null stats
+                }
+
+                // Handle case where stats might be null (RLS blocking or no row)
+                if (!stats) {
+                    console.warn('⚠️ Network stats not available (RLS or missing row)');
+                } else {
+                    console.log('✅ Network stats:', stats);
+                }
+
+                // Fetch user count
+                const { count: userCount, error: userError } = await supabase
+                    .from('users')
+                    .select('*', { count: 'exact', head: true });
+
+                if (userError) {
+                    console.error('❌ User count error:', userError);
+                    throw userError;
+                }
+
+                console.log('✅ User count:', userCount);
+
+                // Update UI with real data - smooth number transitions
+                const nodesEl = document.getElementById('stat-nodes');
+                const signalsEl = document.getElementById('stat-signals');
+                const loadEl = document.getElementById('stat-load');
+
+                // Update nodes count
+                if (nodesEl) {
+                    const nodeCount = userCount || 0;
+                    const numberSpan = nodesEl.querySelector('span:first-child');
+                    
+                    if (numberSpan) {
+                        const currentText = numberSpan.textContent.trim();
+                        const currentNum = parseInt(currentText.replace(/[^0-9]/g, '')) || 0;
+                        
+                        // Always update if different, or if current is 0 (initial load)
+                        if (currentNum !== nodeCount || currentText === '0' || currentText === 'Loading...') {
+                            if (currentNum === 0 || currentText === '0' || currentText === 'Loading...') {
+                                // Initial load - set immediately, no animation
+                                numberSpan.textContent = nodeCount.toLocaleString();
+                            } else {
+                                // Update with animation
+                                animateNumber(numberSpan, currentNum, nodeCount);
+                            }
+                        }
+                    } else {
+                        // Fallback if structure is different
+                        nodesEl.innerHTML = `<span>${nodeCount.toLocaleString()}</span><span class="stat-pulse"></span>`;
+                    }
+                }
+
+                // Update signals per second
+                if (signalsEl) {
+                    if (!stats) {
+                        // If stats not available, use fallback calculation from user count
+                        const fallbackSignals = userCount > 0 ? Math.max(1, Math.floor(userCount / 100)) : 0;
+                        const currentText = signalsEl.textContent.trim();
+                        const currentNum = parseInt(currentText.replace(/[^0-9]/g, '')) || 0;
+                        if (currentNum !== fallbackSignals || currentText === '0' || currentText === 'Loading...') {
+                            signalsEl.textContent = fallbackSignals.toLocaleString();
+                        }
+                    } else {
+                        // Calculate signals per second from velocity or nodes
+                        let signalsPerSec = 0;
+                        if (stats.velocity_score > 0) {
+                            signalsPerSec = Math.floor(stats.velocity_score / 10);
+                        } else if (stats.nodes_last_60s > 0) {
+                            signalsPerSec = Math.floor(stats.nodes_last_60s / 60);
+                        } else if (stats.avg_nodes_per_minute) {
+                            signalsPerSec = Math.floor(parseFloat(stats.avg_nodes_per_minute) / 60);
+                        }
+                        
+                        // Fallback to a minimum if still 0
+                        if (signalsPerSec === 0 && userCount > 0) {
+                            signalsPerSec = Math.max(1, Math.floor(userCount / 100));
+                        }
+                        
+                        const currentText = signalsEl.textContent.trim();
+                        const currentNum = parseInt(currentText.replace(/[^0-9]/g, '')) || 0;
+                        
+                        // Always update if different, or if current is 0 (initial load)
+                        if (currentNum !== signalsPerSec || currentText === '0' || currentText === 'Loading...') {
+                            if (currentNum === 0 || currentText === '0' || currentText === 'Loading...') {
+                                // Initial load - set immediately, no animation
+                                signalsEl.textContent = signalsPerSec.toLocaleString();
+                            } else {
+                                // Update with animation
+                                animateNumber(signalsEl, currentNum, signalsPerSec);
+                            }
+                        }
+                    }
+                }
+
+                // Update server load
+                if (loadEl) {
+                    if (!stats) {
+                        // If stats not available, use fallback calculation from user count
+                        const fallbackLoad = userCount > 0 ? Math.max(5, Math.min(50, Math.floor(userCount / 10))) : 0;
+                        const currentText = loadEl.textContent.trim();
+                        const currentLoad = parseInt(currentText.replace(/[^0-9]/g, '')) || 0;
+                        if (currentLoad !== fallbackLoad || currentText === '0%' || currentText === 'Loading...') {
+                            loadEl.textContent = fallbackLoad + '%';
+                        }
+                    } else {
+                        // Calculate server load from velocity (0-100 scale)
+                        let load = 0;
+                        if (stats.velocity_score > 0) {
+                            load = Math.min(100, Math.max(0, Math.floor(stats.velocity_score / 3)));
+                        } else if (stats.nodes_last_60s > 0) {
+                            load = Math.min(100, Math.max(5, Math.floor(stats.nodes_last_60s / 10)));
+                        }
+                        
+                        // Fallback minimum if still 0
+                        if (load === 0 && userCount > 0) {
+                            load = Math.max(5, Math.min(50, Math.floor(userCount / 10)));
+                        }
+                        
+                        const currentText = loadEl.textContent.trim();
+                        const currentLoad = parseInt(currentText.replace(/[^0-9]/g, '')) || 0;
+                        
+                        // Always update if different, or if current is 0 (initial load)
+                        if (currentLoad !== load || currentText === '0%' || currentText === 'Loading...') {
+                            if (currentLoad === 0 || currentText === '0%' || currentText === 'Loading...') {
+                                // Initial load - set immediately, no animation
+                                loadEl.textContent = load + '%';
+                            } else {
+                                // Update with animation
+                                animateNumber(loadEl, currentLoad, load, '%');
+                            }
+                        }
+                    }
+                }
+
+                console.log('✅ Stats updated successfully');
+
+            } catch (error) {
+                console.error('❌ Error fetching stats:', error);
+                console.error('Error details:', JSON.stringify(error, null, 2));
+                // Show error in UI
+                const nodesEl = document.getElementById('stat-nodes');
+                const signalsEl = document.getElementById('stat-signals');
+                const loadEl = document.getElementById('stat-load');
+                
+                if (nodesEl && nodesEl.textContent.includes('0')) {
+                    nodesEl.innerHTML = '<span>Error</span>';
+                }
+                if (signalsEl && signalsEl.textContent === '0') {
+                    signalsEl.textContent = 'Error';
+                }
+                if (loadEl && loadEl.textContent === '0%') {
+                    loadEl.textContent = 'Error';
+                }
+            }
+        }
+
+        // Smooth number animation
+        function animateNumber(element, from, to, suffix = '') {
+            if (!element) return;
+            
+            const duration = 500; // 500ms animation
+            const steps = 20;
+            const stepValue = (to - from) / steps;
+            const stepTime = duration / steps;
+            let current = from;
+            let step = 0;
+
+            const timer = setInterval(() => {
+                step++;
+                current += stepValue;
+                
+                if (step >= steps) {
+                    element.textContent = to.toLocaleString() + suffix;
+                    clearInterval(timer);
+                } else {
+                    element.textContent = Math.round(current).toLocaleString() + suffix;
+                }
+            }, stepTime);
+        }
+
+        // Subscribe to real-time updates - MULTIPLE CHANNELS FOR PERFECT SYNC
+        function subscribeToStats() {
+            // Channel 1: Network stats updates
+            const statsChannel = supabase
+                .channel('network_stats_realtime')
+                .on('postgres_changes', 
+                    { event: 'UPDATE', schema: 'public', table: 'network_stats', filter: 'id=eq.1' },
+                    (payload) => {
+                        console.log('📊 Network stats updated:', payload);
+                        fetchNetworkStats(); // Immediate refresh
+                    }
+                )
+                .subscribe();
+
+            // Channel 2: User count changes (new signups)
+            const usersChannel = supabase
+                .channel('users_realtime')
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'users' },
+                    (payload) => {
+                        console.log('👤 Users changed:', payload.eventType);
+                        fetchNetworkStats(); // Immediate refresh
+                    }
+                )
+                .subscribe();
+
+            // Channel 3: Posts changes (affects signals)
+            const postsChannel = supabase
+                .channel('posts_realtime')
+                .on('postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'posts', filter: 'visibility=eq.public' },
+                    (payload) => {
+                        console.log('📝 New post created');
+                        // Update signals count immediately
+                        fetchNetworkStats();
+                    }
+                )
+                .subscribe();
+
+            return { statsChannel, usersChannel, postsChannel };
+        }
+
+        // ============================================
+        // FETCH REAL POSTS FROM DATABASE
+        // ============================================
+        async function fetchAndRenderPosts() {
+            try {
+                const feedTrack = document.getElementById('feed-track');
+                if (!feedTrack) return;
+
+                // Fetch latest posts (public posts only) with metrics
+                const { data: posts, error } = await supabase
+                    .from('posts')
+                    .select(`
+                        id,
+                        content,
+                        type,
+                        media_urls,
+                        created_at,
+                        user_id,
+                        users:user_id (
+                            handle,
+                            display_name,
+                            avatar_url
+                        ),
+                        post_metrics (
+                            ack_count,
+                            reply_count,
+                            refract_count,
+                            view_count
+                        )
+                    `)
+                    .eq('visibility', 'public')
+                    .order('created_at', { ascending: false })
+                    .limit(6);
+
+                if (error) throw error;
+
+                if (!posts || posts.length === 0) {
+                    feedTrack.innerHTML = '<div class="text-center text-gray-600 text-xs py-8">No posts yet</div>';
+                    return;
+                }
+
+                // Render posts
+                let postsHTML = '';
+                
+                // Set A: Original posts
+                posts.forEach(post => {
+                    postsHTML += renderPost(post);
+                });
+
+                // Set B: Duplicates for seamless loop
+                posts.forEach(post => {
+                    postsHTML += renderPost(post);
+                });
+
+                feedTrack.innerHTML = postsHTML;
+
+            } catch (error) {
+                console.error('Error fetching posts:', error);
+                const feedTrack = document.getElementById('feed-track');
+                if (feedTrack) {
+                    feedTrack.innerHTML = '<div class="text-center text-gray-600 text-xs py-8">Error loading feed</div>';
+                }
+            }
+        }
+
+        // Format time ago (matches PostCard.tsx)
+        function formatTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+            if (seconds < 60) return '1s AGO';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m AGO`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h AGO`;
+            const days = Math.floor(hours / 24);
+            if (days < 7) return `${days}d AGO`;
+            return date.toLocaleDateString();
+        }
+
+        function renderPost(post) {
+            const user = post.users || {};
+            const handle = user.handle || 'anon';
+            const displayName = user.display_name || handle;
+            const avatarUrl = user.avatar_url || '';
+            const content = post.content || '';
+            const mediaUrls = post.media_urls || [];
+            const hasMedia = mediaUrls.length > 0;
+            const firstMedia = hasMedia ? mediaUrls[0] : null;
+            const timeAgo = formatTimeAgo(post.created_at);
+            // Handle metrics - could be array or single object
+            const metrics = (post.post_metrics && Array.isArray(post.post_metrics) && post.post_metrics[0]) 
+                ? post.post_metrics[0] 
+                : (post.post_metrics || {});
+            const ackCount = metrics.ack_count || 0;
+            const replyCount = metrics.reply_count || 0;
+            const refractCount = metrics.refract_count || 0;
+            const viewCount = metrics.view_count || 0;
+
+            // Match PostCard.tsx exact styling
+            let postHTML = '<div class="phone-post-card">';
+            
+            // Flex row layout (matches PostCard.tsx)
+            postHTML += '<div class="flex flex-row">';
+            
+            // Avatar column (40px, rounded-sm, matches w-10 h-10, mr-2.5)
+            postHTML += '<div class="mr-2.5 relative z-10">';
+            if (avatarUrl) {
+                postHTML += `<img src="${avatarUrl}" class="phone-post-avatar" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'40\\' height=\\'40\\'%3E%3Crect fill=\\'%231f2937\\' width=\\'40\\' height=\\'40\\'/%3E%3C/svg%3E';" />`;
+            } else {
+                postHTML += '<div class="phone-post-avatar"></div>';
+            }
+            postHTML += '</div>';
+
+            // Content column (flex-1)
+            postHTML += '<div class="flex-1">';
+            
+            // Header row: display_name + handle + time (matches PostCard.tsx exactly)
+            postHTML += '<div class="phone-post-header">';
+            // Display name (bold, white, text-sm, flex-shrink, mr-1)
+            postHTML += `<div class="flex flex-row items-center flex-shrink mr-1">`;
+            postHTML += `<span class="phone-post-display-name">${displayName}</span>`;
+            postHTML += '</div>';
+            // Handle + time (flex-1, min-w-0)
+            postHTML += '<div class="flex flex-row items-center flex-1 min-w-0">';
+            postHTML += `<span class="phone-post-handle">@${handle}</span>`;
+            postHTML += '<span class="text-gray-600 text-xs mx-1">//</span>';
+            postHTML += `<span class="phone-post-time">${timeAgo}</span>`;
+            postHTML += '</div>';
+            postHTML += '</div>'; // End header row
+
+            // Content section
+            postHTML += '<div>';
+            
+            // Text content
+            if (content) {
+                // Truncate long content for phone display
+                const maxLength = 120;
+                const truncatedContent = content.length > maxLength ? content.substring(0, maxLength) + '...' : content;
+                // Escape HTML but preserve line breaks
+                const safeContent = truncatedContent
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/\n/g, '<br>');
+                postHTML += `<div class="phone-post-content">${safeContent}</div>`;
+            }
+
+            // Media (if image type)
+            if (post.type === 'image' && firstMedia) {
+                postHTML += `<div class="w-full mb-2 relative overflow-hidden rounded-sm">`;
+                postHTML += `<img src="${firstMedia}" class="w-full h-auto object-cover grayscale opacity-70" onerror="this.parentElement.style.display='none';" />`;
+                postHTML += '</div>';
+            } else if (post.type === 'grid' && mediaUrls.length > 0) {
+                postHTML += `<div class="w-full mb-2 relative overflow-hidden rounded-sm">`;
+                postHTML += `<img src="${mediaUrls[0]}" class="w-full h-auto object-cover grayscale opacity-70" onerror="this.parentElement.style.display='none';" />`;
+                postHTML += '</div>';
+            }
+            
+            postHTML += '</div>'; // End content section
+
+            // Footer with metrics (matches PostFooter.tsx exactly)
+            postHTML += '<div class="phone-post-footer">';
+            postHTML += '<div class="phone-post-metrics">';
+            // ACK
+            postHTML += `<div class="phone-post-metric">`;
+            postHTML += `<span class="phone-post-metric-text">ACK ${ackCount}</span>`;
+            postHTML += '</div>';
+            // REPLY
+            postHTML += `<div class="phone-post-metric">`;
+            postHTML += `<span class="phone-post-metric-text">REPLY ${replyCount}</span>`;
+            postHTML += '</div>';
+            // REFRACT
+            postHTML += `<div class="phone-post-metric">`;
+            postHTML += `<span class="phone-post-metric-text">REFRACT ${refractCount}</span>`;
+            postHTML += '</div>';
+            // VIEW COUNT
+            postHTML += `<div class="phone-post-metric">`;
+            postHTML += `<span class="phone-post-metric-text">${viewCount}</span>`;
+            postHTML += '</div>';
+            postHTML += '</div>'; // End phone-post-metrics
+            // Archive/Bookmark (right side - empty for now)
+            postHTML += '<div class="phone-post-metric">';
+            postHTML += '<span class="phone-post-metric-text"></span>';
+            postHTML += '</div>';
+            postHTML += '</div>'; // End footer
+
+            postHTML += '</div>'; // End content column
+            postHTML += '</div>'; // End flex row
+            postHTML += '</div>'; // End post card
+
+            return postHTML;
+        }
+
+        // Subscribe to new posts in real-time
+        function subscribeToPosts() {
+            const channel = supabase
+                .channel('posts_channel')
+                .on('postgres_changes', 
+                    { event: 'INSERT', schema: 'public', table: 'posts', filter: 'visibility=eq.public' },
+                    (payload) => {
+                        console.log('New post:', payload);
+                        fetchAndRenderPosts(); // Refresh feed
+                    }
+                )
+                .subscribe();
+
+            return channel;
+        }
+
+        // ============================================
+        // DOWNLOAD FUNCTIONALITY
+        // ============================================
+        async function startDownload() {
+            const btn = document.getElementById('dl-btn');
+            const term = document.getElementById('dl-terminal');
+            const bar = document.getElementById('dl-bar');
+            const statusEl = document.getElementById('dl-status');
+
+            // Disable button
+            btn.classList.add('pointer-events-none', 'opacity-50');
+            btn.querySelector('span').innerText = 'INITIALIZING...';
+
+            // Show Terminal
+            term.classList.remove('hidden');
+            statusEl.textContent = '> CONNECTING_TO_KEMET_SERVERS...';
+
+            try {
+                // Optional: Track download analytics
+                await supabase
+                    .from('analytics_events')
+                    .insert({
+                        event_type: 'apk_download_initiated',
+                        metadata: {
+                            user_agent: navigator.userAgent,
+                            timestamp: new Date().toISOString(),
+                            referrer: document.referrer
+                        }
+                    });
+
+                // Animate progress bar
+                setTimeout(() => {
+                    statusEl.textContent = '> VERIFYING_PACKAGE_INTEGRITY...';
+                    bar.style.width = '30%';
+                }, 500);
+
+                setTimeout(() => {
+                    statusEl.textContent = '> DOWNLOADING_PACKAGE...';
+                    bar.style.width = '70%';
+                }, 1200);
+
+                setTimeout(() => {
+                    bar.style.width = '100%';
+                    statusEl.textContent = '> PACKAGE_READY';
+                    
+                    // Trigger actual download
+                    setTimeout(() => {
+                        const link = document.createElement('a');
+                        link.href = appConfig.apkUrl;
+                        link.download = 'kemet_release_v2.apk';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+
+                        btn.querySelector('span').innerText = 'DOWNLOAD STARTED';
+                        btn.querySelector('span').classList.add('text-green-600');
+                        
+                        // Track successful download
+                        supabase
+                            .from('analytics_events')
+                            .insert({
+                                event_type: 'apk_download_completed',
+                                metadata: { timestamp: new Date().toISOString() }
+                            });
+                    }, 300);
+                }, 2000);
+
+            } catch (error) {
+                console.error('Download error:', error);
+                statusEl.textContent = '> ERROR: DOWNLOAD_FAILED';
+                btn.querySelector('span').innerText = 'RETRY DOWNLOAD';
+                btn.classList.remove('pointer-events-none', 'opacity-50');
+            }
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Fetch app release info first
+            fetchAppRelease();
+            
+            // Fetch initial stats immediately
+            fetchNetworkStats();
+            
+            // Subscribe to real-time updates (multiple channels)
+            subscribeToStats();
+            
+            // Fetch and render real posts
+            fetchAndRenderPosts();
+            
+            // Subscribe to new posts
+            subscribeToPosts();
+            
+            // Aggressive polling as backup (every 1 second for perfect sync)
+            statsUpdateInterval = setInterval(fetchNetworkStats, 1000);
+            
+            // Refresh release info every 30 seconds (in case admin updates it)
+            setInterval(fetchAppRelease, 30000);
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (statsUpdateInterval) {
+                clearInterval(statsUpdateInterval);
+            }
+        });
+
+        // ============================================
+        // 3D INTERACTIONS
+        // ============================================
+        // 1. PHONE 3D TILT
+        document.addEventListener('mousemove', (e) => {
+            const phone = document.querySelector('.phone-container');
+            if (phone) {
+                const x = (window.innerWidth / 2 - e.pageX) / 30;
+                const y = (window.innerHeight / 2 - e.pageY) / 30;
+                phone.style.transform = `rotateY(${x}deg) rotateX(${y}deg)`;
+            }
+        });
+
+        // 2. GIANT LOGO PARALLAX
+        document.addEventListener('mousemove', (e) => {
+            const logo = document.getElementById('big-logo');
+            if (logo) {
+                const x = (window.innerWidth / 2 - e.pageX) / 50;
+                const y = (window.innerHeight / 2 - e.pageY) / 50;
+                logo.style.transform = `translate(${x}px, ${y}px)`;
+            }
         });
     </script>
 </body>
-
 </html>
+
