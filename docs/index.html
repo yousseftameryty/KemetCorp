@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="icon" href="Kemet.png" type="image/x-icon">
     <style>
         :root { --kemet-green: #22c55e; }
         body { background-color: #000; color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; cursor: crosshair; }
@@ -277,9 +276,9 @@
             <h1 class="text-xl font-black tracking-tighter">KEMET.</h1>
         </div>
         <div class="hidden md:flex gap-8 text-[10px] font-mono text-gray-400 uppercase tracking-widest">
-            <a href="#features" class="hover:text-white hover:underline decoration-green-500 underline-offset-4 transition">Protocol</a>
+            <a href="/protocol.html" class="hover:text-white hover:underline decoration-green-500 underline-offset-4 transition">Protocol</a>
             <a href="#stats" class="hover:text-white hover:underline decoration-green-500 underline-offset-4 transition">Live_Data</a>
-            <span class="text-green-500">V.2.0.4 (STABLE)</span>
+            <span class="text-green-500" id="header-version">V.1.0.0 (STABLE)</span>
         </div>
     </nav>
 
@@ -445,9 +444,9 @@
         
         <!-- Bottom Links -->
         <div class="absolute bottom-10 w-full flex justify-between px-10 text-[10px] font-mono text-gray-600 uppercase z-20">
-            <span>© 2024 KEMET SYSTEMS. ALL RIGHTS RESERVED.</span>
+            <span>© 2025 KEMET CORP. ALL RIGHTS RESERVED.</span>
             <div class="flex gap-6">
-                <a href="#" class="hover:text-white transition">Manifesto</a>
+                <a href="/protocol.html" class="hover:text-white transition">Manifesto</a>
                 <a href="#" class="hover:text-white transition"></a>
                 <a href="#" class="hover:text-white transition">Contact</a>
             </div>
@@ -507,10 +506,17 @@
                     const buildEl = document.getElementById('build-version');
                     const sizeEl = document.getElementById('apk-size');
                     const androidEl = document.getElementById('android-version');
+                    const headerVersionEl = document.getElementById('header-version');
                     
                     if (buildEl) buildEl.textContent = release.build_number;
                     if (sizeEl) sizeEl.textContent = release.apk_size_mb ? `${release.apk_size_mb}MB` : 'N/A';
                     if (androidEl) androidEl.textContent = release.android_min_version;
+                    
+                    // Update header version with release type
+                    if (headerVersionEl) {
+                        const releaseType = release.release_type || 'STABLE';
+                        headerVersionEl.textContent = `V.${release.version_name} (${releaseType})`;
+                    }
                     
                     console.log('✅ App release loaded:', release);
                 } else {
