@@ -278,6 +278,7 @@
         </div>
         <div class="hidden md:flex gap-8 text-[10px] font-mono text-gray-400 uppercase tracking-widest">
             <a href="protocol.html" class="hover:text-white hover:underline decoration-green-500 underline-offset-4 transition">Protocol</a>
+            <a href="#stats" class="hover:text-white hover:underline decoration-green-500 underline-offset-4 transition">Live_Data</a>
             <span class="text-green-500" id="header-version">V.1.0.0 (STABLE)</span>
         </div>
     </nav>
@@ -556,14 +557,13 @@
                     console.log('✅ Network stats:', stats);
                 }
 
-                // Fetch user count
-                const { count: userCount, error: userError } = await supabase
-                    .from('users')
-                    .select('*', { count: 'exact', head: true });
+                // Fetch user count using secure function (anonymous access allowed)
+                const { data: userCount, error: userError } = await supabase.rpc('get_user_count');
 
                 if (userError) {
                     console.error('❌ User count error:', userError);
-                    throw userError;
+                    // Don't throw - continue with 0 if function fails
+                    userCount = 0;
                 }
 
                 console.log('✅ User count:', userCount);
@@ -741,6 +741,8 @@
                 .subscribe();
 
             // Channel 2: User count changes (new signups)
+            // Note: Realtime subscription may be limited by RLS, so we rely on polling
+            // The subscription is kept for potential future use but may not receive events for anonymous users
             const usersChannel = supabase
                 .channel('users_realtime')
                 .on('postgres_changes',
@@ -750,7 +752,13 @@
                         fetchNetworkStats(); // Immediate refresh
                     }
                 )
-                .subscribe();
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('✅ Subscribed to users changes');
+                    } else if (status === 'CHANNEL_ERROR') {
+                        console.warn('⚠️ Users channel subscription error (RLS may block anonymous access)');
+                    }
+                });
 
             // Channel 3: Posts changes (affects signals)
             const postsChannel = supabase
@@ -1028,7 +1036,10 @@
                     setTimeout(() => {
                         const link = document.createElement('a');
                         link.href = appConfig.apkUrl;
-                        link.download = 'kemet_release_v2.apk';
+                        // Extract filename from URL or use default
+                        const urlParts = appConfig.apkUrl.split('/');
+                        const fileName = urlParts[urlParts.length - 1] || `kemet_v${appConfig.buildVersion}.apk`;
+                        link.download = fileName;
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);

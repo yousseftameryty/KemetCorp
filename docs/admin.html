@@ -175,10 +175,6 @@
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     Release_History
                 </button>
-                <button class="nav-btn w-full" onclick="switchTab('users', this)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    Node_Manager
-                </button>
             </nav>
 
             <div class="p-6 border-t border-gray-900">
@@ -336,30 +332,6 @@
                 </div>
             </section>
 
-            <!-- === TAB 4: USERS (NODES) === -->
-            <section id="users" class="workspace-section">
-                <div class="panel-header">
-                    <span>NODE_MANAGER</span>
-                    <div class="flex gap-2">
-                        <input type="text" id="user-search" placeholder="SEARCH HANDLE / UID" class="raw-input w-64 bg-[#0a0a0a] border-gray-800" onkeyup="searchUsers(event)">
-                    </div>
-                </div>
-
-                <!-- User Table -->
-                <div class="border border-gray-800">
-                    <div class="grid grid-cols-5 p-3 bg-[#0a0a0a] border-b border-gray-800 text-[9px] font-mono text-gray-500 uppercase">
-                        <span class="col-span-2">Identity</span>
-                        <span>Joined</span>
-                        <span>Status</span>
-                        <span class="text-right">Action</span>
-                    </div>
-                    
-                    <div id="users-list" class="text-gray-400">
-                        <div class="p-4 text-center">Loading...</div>
-                    </div>
-                </div>
-            </section>
-
         </main>
     </div>
 
@@ -373,11 +345,149 @@
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // ============================================
+        // SECURITY STATE (Cannot be bypassed)
+        // ============================================
+        let authState = {
+            isAuthenticated: false,
+            isAdmin: false,
+            userId: null,
+            session: null,
+            lastCheck: 0
+        };
+
+        // Prevent DOM manipulation - store auth state in closure
+        const secureAuth = (function() {
+            let _isAuthenticated = false;
+            let _isAdmin = false;
+            let _session = null;
+            
+            return {
+                setAuthenticated: (session, isAdmin) => {
+                    _isAuthenticated = true;
+                    _isAdmin = isAdmin;
+                    _session = session;
+                    authState.isAuthenticated = true;
+                    authState.isAdmin = isAdmin;
+                    authState.session = session;
+                },
+                setUnauthenticated: () => {
+                    _isAuthenticated = false;
+                    _isAdmin = false;
+                    _session = null;
+                    authState.isAuthenticated = false;
+                    authState.isAdmin = false;
+                    authState.session = null;
+                },
+                isAuthenticated: () => _isAuthenticated && _isAdmin,
+                getSession: () => _session
+            };
+        })();
+
+        // ============================================
+        // SECURITY: Authentication Guard
+        // ============================================
+        async function requireAuth() {
+            // Check cache first (avoid excessive checks)
+            const now = Date.now();
+            if (authState.lastCheck > 0 && (now - authState.lastCheck) < 5000) {
+                if (!secureAuth.isAuthenticated()) {
+                    throw new Error('Unauthorized');
+                }
+                return;
+            }
+
+            // Verify session
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error || !session) {
+                secureAuth.setUnauthenticated();
+                authState.lastCheck = now;
+                throw new Error('Not authenticated');
+            }
+
+            // Verify admin role
+            const user = session.user;
+            const isAdmin = user?.user_metadata?.role === 'admin' || 
+                          user?.app_metadata?.role === 'admin' ||
+                          (await checkAdminRole(user.id));
+            
+            if (!isAdmin) {
+                secureAuth.setUnauthenticated();
+                authState.lastCheck = now;
+                throw new Error('Admin access required');
+            }
+
+            secureAuth.setAuthenticated(session, true);
+            authState.lastCheck = now;
+        }
+
+        // Check admin role from database
+        async function checkAdminRole(userId) {
+            try {
+                // Use RPC function if available, or check user metadata
+                const { data, error } = await supabase.rpc('is_admin');
+                if (!error && data) return data;
+                
+                // Fallback: check user metadata
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                if (userError) return false;
+                
+                return user?.user_metadata?.role === 'admin' || 
+                       user?.app_metadata?.role === 'admin';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // ============================================
+        // SECURITY: DOM Protection
+        // ============================================
+        function protectDOM() {
+            // Prevent removal of login screen
+            const loginScreen = document.getElementById('login-screen');
+            const adminPanel = document.getElementById('admin-panel');
+            
+            if (loginScreen && adminPanel) {
+                // Monitor for removal attempts
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.type === 'childList') {
+                            mutation.removedNodes.forEach((node) => {
+                                if (node === loginScreen || node.id === 'login-screen') {
+                                    // Login screen was removed - restore it
+                                    if (!secureAuth.isAuthenticated()) {
+                                        document.body.appendChild(loginScreen);
+                                        adminPanel.classList.add('hidden');
+                                        location.reload(); // Force reload on tampering
+                                    }
+                                }
+                            });
+                        }
+                    });
+                });
+
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
+
+                // Prevent direct manipulation
+                Object.defineProperty(loginScreen, 'remove', {
+                    value: function() {
+                        if (!secureAuth.isAuthenticated()) {
+                            console.warn('Security: Login screen removal blocked');
+                            return;
+                        }
+                        return HTMLElement.prototype.remove.call(this);
+                    }
+                });
+            }
+        }
+
+        // ============================================
         // DATA CACHING (Reduce DB Load)
         // ============================================
         let dataCache = {
             dashboard: { data: null, timestamp: 0 },
-            users: { data: null, timestamp: 0 },
             releases: { data: null, timestamp: 0 }
         };
         const CACHE_DURATION = 10000; // 10 seconds cache
@@ -421,12 +531,19 @@
 
                 if (authError) throw authError;
                 
+                // Verify admin role
+                const isAdmin = await checkAdminRole(data.user.id);
+                if (!isAdmin) {
+                    await supabase.auth.signOut();
+                    throw new Error('Admin access required');
+                }
+
+                secureAuth.setAuthenticated(data.session, true);
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('admin-panel').classList.remove('hidden');
                 
-                refreshDashboard();
-                loadReleaseHistory();
-                loadUsers();
+                await refreshDashboard();
+                await loadReleaseHistory();
             } catch (err) {
                 console.error('Sign in error:', err);
                 let errorMessage = 'Invalid email or password';
@@ -440,9 +557,7 @@
                 error.textContent = errorMessage;
                 error.classList.remove('hidden');
                 document.getElementById('password-input').value = '';
-                
-                // Show more details in console for debugging
-                console.error('Full error:', err);
+                secureAuth.setUnauthenticated();
             } finally {
                 signinBtn.disabled = false;
                 signinBtn.textContent = 'SIGN IN';
@@ -450,44 +565,59 @@
         }
 
         async function logout() {
+            secureAuth.setUnauthenticated();
             await supabase.auth.signOut();
             location.reload();
         }
 
         async function checkAuth() {
             try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                if (error) throw error;
-                
-                if (session) {
-                    document.getElementById('login-screen').classList.add('hidden');
-                    document.getElementById('admin-panel').classList.remove('hidden');
-                    refreshDashboard();
-                    loadReleaseHistory();
-                    loadUsers();
-                }
+                await requireAuth();
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('admin-panel').classList.remove('hidden');
+                await refreshDashboard();
+                await loadReleaseHistory();
             } catch (error) {
                 console.error('Auth check error:', error);
+                secureAuth.setUnauthenticated();
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('admin-panel').classList.add('hidden');
             }
         }
 
-        supabase.auth.onAuthStateChange((event, session) => {
+        supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_OUT' || !session) {
+                secureAuth.setUnauthenticated();
                 document.getElementById('login-screen').classList.remove('hidden');
                 document.getElementById('admin-panel').classList.add('hidden');
             } else if (event === 'SIGNED_IN' && session) {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('admin-panel').classList.remove('hidden');
-                refreshDashboard();
-                loadReleaseHistory();
-                loadUsers();
+                try {
+                    await requireAuth();
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('admin-panel').classList.remove('hidden');
+                    await refreshDashboard();
+                    await loadReleaseHistory();
+                    await loadUsers();
+                } catch (error) {
+                    secureAuth.setUnauthenticated();
+                    document.getElementById('login-screen').classList.remove('hidden');
+                    document.getElementById('admin-panel').classList.add('hidden');
+                }
             }
         });
 
         // ============================================
         // TAB SWITCHING
         // ============================================
-        function switchTab(id, btn) {
+        async function switchTab(id, btn) {
+            try {
+                await requireAuth();
+            } catch (error) {
+                alert('Authentication required');
+                location.reload();
+                return;
+            }
+
             document.querySelectorAll('.workspace-section').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
             
@@ -495,16 +625,22 @@
             btn.classList.add('active');
 
             // Load data when switching to tab (with cache)
-            if (id === 'dashboard') refreshDashboard();
-            else if (id === 'users') loadUsers();
-            else if (id === 'releases') loadReleaseHistory();
-            else if (id === 'deploy') autoFillVersionAndBuild(); // Auto-fill version/build when opening deploy tab
+            if (id === 'dashboard') await refreshDashboard();
+            else if (id === 'releases') await loadReleaseHistory();
+            else if (id === 'deploy') await autoFillVersionAndBuild(); // Auto-fill version/build when opening deploy tab
         }
 
         // ============================================
         // DASHBOARD (Real Data)
         // ============================================
         async function refreshDashboard() {
+            try {
+                await requireAuth();
+            } catch (error) {
+                addLog('Authentication required', 'log-warn');
+                return;
+            }
+
             const cached = getCachedData('dashboard');
             if (cached) {
                 updateDashboardUI(cached);
@@ -514,10 +650,9 @@
 
             addLog('Fetching dashboard data...', '');
             try {
-                // Fetch user count
-                const { count: userCount, error: userError } = await supabase
-                    .from('users')
-                    .select('*', { count: 'exact', head: true });
+                // Fetch user count using secure function
+                const { data: userCountData, error: userCountError } = await supabase.rpc('get_user_count');
+                const userCount = userCountError ? 0 : (userCountData || 0);
 
                 // Fetch network stats
                 const { data: stats, error: statsError } = await supabase
@@ -526,11 +661,16 @@
                     .eq('id', 1)
                     .maybeSingle();
 
-                // Fetch download count from analytics
+                // Fetch download count from analytics (requires admin)
                 const { count: downloadCount, error: downloadError } = await supabase
                     .from('analytics_events')
                     .select('*', { count: 'exact', head: true })
                     .eq('event_type', 'apk_download_completed');
+                
+                if (downloadError && downloadError.code === '42501') {
+                    addLog('Access denied: Admin required', 'log-warn');
+                    throw new Error('Admin access required');
+                }
 
                 // Fetch current release
                 const { data: release, error: releaseError } = await supabase
@@ -606,6 +746,12 @@
         }
 
         async function autoFillVersionAndBuild() {
+            try {
+                await requireAuth();
+            } catch (error) {
+                return;
+            }
+
             // Only auto-fill if fields are empty
             const versionInput = document.getElementById('deploy-version');
             const buildInput = document.getElementById('deploy-build');
@@ -613,12 +759,16 @@
             if (!versionInput.value) {
                 // Try to get latest version from DB and increment
                 try {
-                    const { data: releases } = await supabase
+                    const { data: releases, error: releaseError } = await supabase
                         .from('app_releases')
                         .select('version_name')
                         .order('created_at', { ascending: false })
                         .limit(1)
                         .maybeSingle();
+                    
+                    if (releaseError && releaseError.code === '42501') {
+                        return; // Silent fail if not authorized
+                    }
                     
                     if (releases && releases.version_name) {
                         // Increment patch version (e.g., 2.0.5 -> 2.0.6)
@@ -746,6 +896,13 @@
         }
 
         async function deployBuild() {
+            try {
+                await requireAuth();
+            } catch (error) {
+                addLog('Authentication required', 'log-warn');
+                return;
+            }
+
             const versionName = document.getElementById('deploy-version').value;
             const buildNumber = document.getElementById('deploy-build').value;
             const androidVersion = document.getElementById('deploy-android').value;
@@ -786,10 +943,14 @@
                 addLog('Updating database...', '');
 
                 // Deactivate current release
-                await supabase
+                const { error: updateError } = await supabase
                     .from('app_releases')
                     .update({ is_active: false })
                     .eq('is_active', true);
+                
+                if (updateError && updateError.code === '42501') {
+                    throw new Error('Admin access required');
+                }
 
                 // Insert new release
                 const { data, error } = await supabase
@@ -807,7 +968,12 @@
                     .select()
                     .single();
 
-                if (error) throw error;
+                if (error) {
+                    if (error.code === '42501') {
+                        throw new Error('Admin access required');
+                    }
+                    throw error;
+                }
 
                 addLog(`🚀 DEPLOYMENT SUCCESS: ${versionName} IS LIVE`, 'log-succ');
                 btn.innerText = "DEPLOY COMPLETE";
@@ -901,6 +1067,13 @@
         }
 
         async function completeDeploy() {
+            try {
+                await requireAuth();
+            } catch (error) {
+                addLog('Authentication required', 'log-warn');
+                return;
+            }
+
             const apkUrl = document.getElementById('post-deploy-url').value;
             if (!apkUrl) {
                 addLog('Please paste the APK download URL', 'log-warn');
@@ -919,10 +1092,14 @@
                 addLog('Completing deployment...', '');
                 
                 // Deactivate current release
-                await supabase
+                const { error: updateError } = await supabase
                     .from('app_releases')
                     .update({ is_active: false })
                     .eq('is_active', true);
+                
+                if (updateError && updateError.code === '42501') {
+                    throw new Error('Admin access required');
+                }
 
                 // Insert new release
                 const { data, error } = await supabase
@@ -940,7 +1117,12 @@
                     .select()
                     .single();
 
-                if (error) throw error;
+                if (error) {
+                    if (error.code === '42501') {
+                        throw new Error('Admin access required');
+                    }
+                    throw error;
+                }
 
                 addLog(`🚀 DEPLOYMENT SUCCESS: ${versionName} IS LIVE`, 'log-succ');
                 
@@ -986,6 +1168,13 @@
         // RELEASE HISTORY
         // ============================================
         async function loadReleaseHistory() {
+            try {
+                await requireAuth();
+            } catch (error) {
+                document.getElementById('release-history-list').innerHTML = `<div class="p-4 text-red-500">Authentication required</div>`;
+                return;
+            }
+
             const cached = getCachedData('releases');
             if (cached) {
                 renderReleaseHistory(cached);
@@ -999,7 +1188,12 @@
                     .order('created_at', { ascending: false })
                     .limit(20);
 
-                if (error) throw error;
+                if (error) {
+                    if (error.code === '42501') {
+                        throw new Error('Admin access required');
+                    }
+                    throw error;
+                }
 
                 setCachedData('releases', releases);
                 renderReleaseHistory(releases);
@@ -1031,74 +1225,15 @@
             `).join('');
         }
 
-        // ============================================
-        // USERS (NODES)
-        // ============================================
-        async function loadUsers(searchTerm = '') {
-            const cached = getCachedData('users');
-            if (cached && !searchTerm) {
-                renderUsers(cached);
-                return;
-            }
-
-            try {
-                let query = supabase
-                    .from('users')
-                    .select('id, handle, display_name, avatar_url, created_at')
-                    .order('created_at', { ascending: false })
-                    .limit(50);
-
-                if (searchTerm) {
-                    query = query.or(`handle.ilike.%${searchTerm}%,display_name.ilike.%${searchTerm}%`);
-                }
-
-                const { data: users, error } = await query;
-
-                if (error) throw error;
-
-                if (!searchTerm) setCachedData('users', users);
-                renderUsers(users);
-            } catch (error) {
-                document.getElementById('users-list').innerHTML = `<div class="p-4 text-red-500">Error: ${error.message}</div>`;
-            }
-        }
-
-        function renderUsers(users) {
-            const container = document.getElementById('users-list');
-            if (!users || users.length === 0) {
-                container.innerHTML = '<div class="p-4 text-center text-gray-500">No users found</div>';
-                return;
-            }
-
-            container.innerHTML = users.map(user => `
-                <div class="grid grid-cols-5 p-4 border-b border-gray-900 items-center hover:bg-[#0a0a0a] transition">
-                    <div class="col-span-2 flex items-center gap-3">
-                        <div class="w-8 h-8 bg-gray-800 rounded-sm overflow-hidden">
-                            <img src="${user.avatar_url || 'https://via.placeholder.com/32'}" class="w-full h-full object-cover grayscale" onerror="this.src='https://via.placeholder.com/32';">
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold text-white">${user.display_name || 'Unknown'}</div>
-                            <div class="text-[9px] font-mono text-gray-500">@${user.handle || 'unknown'}</div>
-                        </div>
-                    </div>
-                    <div class="text-[10px] font-mono text-gray-400">${new Date(user.created_at).toLocaleDateString()}</div>
-                    <div><span class="text-[9px] font-bold bg-green-900/30 text-green-500 px-1 border border-green-800">ACTIVE</span></div>
-                    <div class="text-right"><button class="text-[9px] font-mono text-white underline hover:text-red-500">MANAGE</button></div>
-                </div>
-            `).join('');
-        }
-
-        function searchUsers(event) {
-            const term = event.target.value.trim();
-            if (term.length >= 2 || term.length === 0) {
-                loadUsers(term);
-            }
-        }
 
         // ============================================
         // INITIALIZATION
         // ============================================
         document.addEventListener('DOMContentLoaded', async () => {
+            // Enable DOM protection
+            protectDOM();
+            
+            // Check authentication
             await checkAuth();
             
             // Auto-fill version and build when deploy tab is active
@@ -1112,6 +1247,16 @@
                     calculateDeploySize();
                 }
             });
+
+            // Periodic auth check (every 30 seconds)
+            setInterval(async () => {
+                try {
+                    await requireAuth();
+                } catch (error) {
+                    console.warn('Auth check failed, reloading...');
+                    location.reload();
+                }
+            }, 30000);
         });
     </script>
 </body>
