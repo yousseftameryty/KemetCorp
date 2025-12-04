@@ -695,54 +695,36 @@
 
         async function loadModerationStats() {
             try {
-                // Get pending appeals count
-                const { count: pendingCount } = await supabase
-                    .from('ban_appeals')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('status', 'pending');
-
-                // Get banned users count
-                const { count: bannedCount } = await supabase
-                    .from('users')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('account_status', 'banned');
-
-                // Get restricted users count
-                const { count: restrictedCount } = await supabase
-                    .from('users')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('account_status', 'restricted');
-
-                // Get strikes today
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const { count: strikesToday } = await supabase
-                    .from('account_status_logs')
-                    .select('*', { count: 'exact', head: true })
-                    .gte('created_at', today.toISOString());
-
-                document.getElementById('stat-pending-appeals').textContent = pendingCount || 0;
-                document.getElementById('stat-banned-users').textContent = bannedCount || 0;
-                document.getElementById('stat-restricted-users').textContent = restrictedCount || 0;
-                document.getElementById('stat-strikes-today').textContent = strikesToday || 0;
+                // Use admin RPC function to get all stats at once
+                const { data: stats, error } = await supabase.rpc('admin_get_moderation_stats');
+                
+                if (error) throw error;
+                
+                const statsData = stats?.[0] || {};
+                document.getElementById('stat-pending-appeals').textContent = statsData.pending_appeals || 0;
+                document.getElementById('stat-banned-users').textContent = statsData.banned_users || 0;
+                document.getElementById('stat-restricted-users').textContent = statsData.restricted_users || 0;
+                document.getElementById('stat-strikes-today').textContent = statsData.strikes_today || 0;
             } catch (error) {
                 console.error('Error loading moderation stats:', error);
+                // Fallback to 0 if RPC fails
+                document.getElementById('stat-pending-appeals').textContent = '0';
+                document.getElementById('stat-banned-users').textContent = '0';
+                document.getElementById('stat-restricted-users').textContent = '0';
+                document.getElementById('stat-strikes-today').textContent = '0';
             }
         }
 
         async function loadAppeals() {
             try {
-                const { data: appeals, error } = await supabase
-                    .from('ban_appeals')
-                    .select('*, users:user_id(handle, display_name)')
-                    .order('created_at', { ascending: false })
-                    .limit(50);
+                // Use admin RPC function to bypass RLS
+                const { data: appeals, error } = await supabase.rpc('admin_get_appeals');
 
                 if (error) throw error;
                 renderAppeals(appeals || []);
             } catch (error) {
                 console.error('Error loading appeals:', error);
-                document.getElementById('appeals-list').innerHTML = '<div class="p-4 text-center text-red-500">Error loading appeals</div>';
+                document.getElementById('appeals-list').innerHTML = `<div class="p-4 text-center text-red-500">Error loading appeals: ${error.message}</div>`;
             }
         }
 
@@ -754,7 +736,6 @@
             }
 
             container.innerHTML = appeals.map(appeal => {
-                const user = appeal.users || {};
                 const statusColor = {
                     'pending': '#6b7280',
                     'under_review': '#f59e0b',
@@ -765,14 +746,14 @@
                 return `
                     <div class="grid grid-cols-6 p-4 border-b border-gray-900 items-center hover:bg-[#0a0a0a] transition">
                         <div>
-                            <div class="text-xs font-bold text-white">${sanitize(user.display_name || 'Unknown')}</div>
-                            <div class="text-[9px] font-mono text-gray-500">@${sanitize(user.handle || 'unknown')}</div>
+                            <div class="text-xs font-bold text-white">${sanitize(appeal.user_display_name || 'Unknown')}</div>
+                            <div class="text-[9px] font-mono text-gray-500">@${sanitize(appeal.user_handle || 'unknown')}</div>
                         </div>
                         <div class="text-[10px] font-mono text-gray-400">${sanitize(appeal.ban_reason || 'N/A')}</div>
-                        <div class="text-[10px] font-mono text-gray-400 truncate" title="${sanitize(appeal.appeal_message)}">${sanitize(appeal.appeal_message.substring(0, 50))}...</div>
+                        <div class="text-[10px] font-mono text-gray-400 truncate" title="${sanitize(appeal.appeal_message || '')}">${sanitize((appeal.appeal_message || '').substring(0, 50))}${appeal.appeal_message && appeal.appeal_message.length > 50 ? '...' : ''}</div>
                         <div>
                             <span class="text-[9px] font-bold px-2 py-1" style="background-color: ${statusColor}20; color: ${statusColor}; border: 1px solid ${statusColor}40;">
-                                ${appeal.status.toUpperCase()}
+                                ${(appeal.status || 'pending').toUpperCase()}
                             </span>
                         </div>
                         <div class="text-[10px] font-mono text-gray-500">${new Date(appeal.created_at).toLocaleDateString()}</div>
@@ -794,36 +775,15 @@
             if (!confirm('Are you sure you want to approve this appeal? This will unban the user.')) return;
 
             try {
-                const { data: { user } } = await supabase.auth.getUser();
-                
-                // First check if appeal is already processed
-                const { data: existingAppeal } = await supabase
-                    .from('ban_appeals')
-                    .select('status')
-                    .eq('id', appealId)
-                    .single();
-
-                if (existingAppeal?.status === 'approved') {
-                    alert('This appeal has already been approved.');
-                    loadAppeals();
-                    return;
-                }
-
-                // Update appeal status - the trigger will handle user status update
-                const { error } = await supabase
-                    .from('ban_appeals')
-                    .update({ 
-                        status: 'approved',
-                        reviewed_at: new Date().toISOString(),
-                        reviewed_by: user?.id || null,
-                        review_notes: reviewNotes || null
-                    })
-                    .eq('id', appealId)
-                    .eq('status', 'pending'); // Only update if still pending
+                // Use admin RPC function to bypass RLS and foreign key issues
+                const { error } = await supabase.rpc('admin_update_appeal', {
+                    p_appeal_id: appealId,
+                    p_status: 'approved',
+                    p_review_notes: reviewNotes || null
+                });
 
                 if (error) {
-                    // Check if it's a conflict or constraint violation
-                    if (error.code === 'PGRST204' || error.message.includes('409') || error.message.includes('conflict')) {
+                    if (error.message.includes('already processed') || error.message.includes('not found')) {
                         alert('Appeal may have already been processed. Refreshing...');
                         loadAppeals();
                         return;
@@ -850,17 +810,12 @@
             if (!confirm('Are you sure you want to reject this appeal? The user will remain banned.')) return;
 
             try {
-                const { data: { user } } = await supabase.auth.getUser();
-                
-                const { error } = await supabase
-                    .from('ban_appeals')
-                    .update({ 
-                        status: 'rejected',
-                        reviewed_at: new Date().toISOString(),
-                        reviewed_by: user?.id || null,
-                        review_notes: reviewNotes || null
-                    })
-                    .eq('id', appealId);
+                // Use admin RPC function to bypass RLS and foreign key issues
+                const { error } = await supabase.rpc('admin_update_appeal', {
+                    p_appeal_id: appealId,
+                    p_status: 'rejected',
+                    p_review_notes: reviewNotes || null
+                });
 
                 if (error) throw error;
                 loadAppeals();
@@ -868,7 +823,7 @@
                 alert('Appeal rejected.');
             } catch (error) {
                 console.error('Error rejecting appeal:', error);
-                alert('Error rejecting appeal: ' + error.message);
+                alert('Error rejecting appeal: ' + (error.message || 'Unknown error'));
             }
         }
 
@@ -1506,23 +1461,16 @@
 
         async function loadUsers(searchTerm = '') {
             try {
-                // Use public_profiles view which includes account_status from users table
-                let query = supabase
-                    .from('public_profiles')
-                    .select('id, handle, display_name, avatar_url, created_at, account_status, strike_count')
-                    .order('created_at', { ascending: false })
-                    .limit(100);
+                // Use admin RPC function to bypass RLS
+                const { data: users, error } = await supabase.rpc('admin_get_users', {
+                    search_term: searchTerm || ''
+                });
 
-                if (searchTerm) {
-                    query = query.or(`handle.ilike.%${searchTerm}%,display_name.ilike.%${searchTerm}%`);
-                }
-
-                const { data: users, error } = await query;
                 if (error) throw error;
                 renderUsers(users || []);
             } catch (error) { 
                 console.error('Error loading users:', error);
-                document.getElementById('users-list').innerHTML = '<div class="p-4 text-center text-red-500">Error loading users</div>';
+                document.getElementById('users-list').innerHTML = `<div class="p-4 text-center text-red-500">Error loading users: ${error.message}</div>`;
             }
         }
 
@@ -1693,19 +1641,11 @@
 
         async function loadDatabaseTables() {
             try {
-                // Get list of tables from information_schema
-                const { data: tables, error } = await supabase.rpc('exec_sql', {
-                    query: `
-                        SELECT table_name, 
-                               (SELECT count(*) FROM information_schema.columns WHERE table_name = t.table_name) as column_count
-                        FROM information_schema.tables t
-                        WHERE table_schema = 'public' 
-                        AND table_type = 'BASE TABLE'
-                        ORDER BY table_name;
-                    `
-                });
+                // Use admin RPC function to get table list
+                const { data: tables, error } = await supabase.rpc('admin_get_tables');
 
                 if (error) {
+                    console.error('Error loading tables:', error);
                     // Fallback: use hardcoded list of known tables
                     const knownTables = [
                         'users', 'posts', 'ban_appeals', 'account_status_logs', 'violation_reasons',
@@ -1765,13 +1705,17 @@
             document.getElementById('table-viewer-name').textContent = `TABLE: ${tableName}`;
             
             try {
-                const { data, error } = await supabase
-                    .from(tableName)
-                    .select('*')
-                    .limit(100);
+                // Use admin RPC function to bypass RLS
+                const { data: result, error } = await supabase.rpc('admin_view_table', {
+                    p_table_name: tableName,
+                    p_limit: 100
+                });
 
                 if (error) throw error;
-                renderTableData(tableName, data || []);
+                
+                // Parse JSONB result
+                const tableData = Array.isArray(result) ? result : (result ? JSON.parse(JSON.stringify(result)) : []);
+                renderTableData(tableName, tableData);
             } catch (error) {
                 console.error('Error loading table data:', error);
                 document.getElementById('table-viewer-content').innerHTML = 
@@ -1879,15 +1823,18 @@
             try {
                 resultsDiv.innerHTML = '<div class="text-gray-500">Executing query...</div>';
                 
-                // Use RPC if available, otherwise try direct query
-                // Note: Supabase client doesn't support raw SQL, so we'll use table queries
-                // For now, parse simple SELECT queries
+                // Parse simple SELECT queries and use admin RPC
                 const tableMatch = query.match(/FROM\s+(\w+)/i);
                 if (tableMatch) {
                     const tableName = tableMatch[1];
-                    const { data, error } = await supabase.from(tableName).select('*').limit(100);
+                    const { data: result, error } = await supabase.rpc('admin_view_table', {
+                        p_table_name: tableName,
+                        p_limit: 100
+                    });
                     
                     if (error) throw error;
+                    
+                    const data = Array.isArray(result) ? result : (result ? JSON.parse(JSON.stringify(result)) : []);
                     
                     if (!data || data.length === 0) {
                         resultsDiv.innerHTML = '<div class="text-gray-500">No results found</div>';
@@ -1937,10 +1884,17 @@
 
         async function exportTable(tableName) {
             try {
-                const { data, error } = await supabase.from(tableName).select('*').limit(1000);
-                if (error) throw error;
+                // Use admin RPC function to bypass RLS
+                const { data: result, error } = await supabase.rpc('admin_view_table', {
+                    p_table_name: tableName,
+                    p_limit: 1000
+                });
 
-                const csv = convertToCSV(data || []);
+                if (error) throw error;
+                
+                // Parse JSONB result
+                const data = Array.isArray(result) ? result : (result ? JSON.parse(JSON.stringify(result)) : []);
+                const csv = convertToCSV(data);
                 const blob = new Blob([csv], { type: 'text/csv' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
