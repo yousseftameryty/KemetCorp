@@ -580,16 +580,22 @@
         // ============================================
         async function checkAdminRole(userId) {
             try {
-                // 1. Try Secure RPC first (Best)
+                // Use is_admin() RPC which checks admin_users table
                 const { data: isRpcAdmin, error } = await supabase.rpc('is_admin');
                 if (!error && isRpcAdmin === true) return true;
 
-                // 2. Fallback to Metadata
+                // Fallback: Check app_metadata (for backwards compatibility)
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return false;
                 
-                // SECURITY FIX: CHECK app_metadata, NOT user_metadata
-                return user.app_metadata?.role === 'admin';
+                // If admin in app_metadata, sync to admin_users table
+                if (user.app_metadata?.role === 'admin') {
+                    // Sync admin_users table
+                    await supabase.rpc('sync_admin_users');
+                    return true;
+                }
+                
+                return false;
             } catch (e) {
                 console.error('Role check failed:', e);
                 return false;
