@@ -120,6 +120,22 @@
             outline: none;
             border-color: white;
         }
+
+        /* MODERATION TABS */
+        .mod-tab-btn {
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .mod-tab-btn.active {
+            color: white;
+            border-bottom-color: white !important;
+        }
+        .moderation-subsection {
+            display: block;
+        }
+        .moderation-subsection.hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -166,6 +182,10 @@
                 <button class="nav-btn w-full" onclick="switchTab('users', this)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     Node_Manager
+                </button>
+                <button class="nav-btn w-full" onclick="switchTab('moderation', this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Moderation
                 </button>
             </nav>
 
@@ -348,6 +368,102 @@
                 </div>
             </section>
 
+            <!-- === TAB 5: MODERATION === -->
+            <section id="moderation" class="workspace-section">
+                <div class="panel-header">
+                    <span>MODERATION_CONTROL</span>
+                    <div class="flex gap-2">
+                        <button onclick="loadAppeals()" class="action-btn text-[10px] px-3 py-2 bg-[#111] text-white border border-gray-800 hover:border-white">
+                            REFRESH APPEALS
+                        </button>
+                        <button onclick="loadViolationReasons()" class="action-btn text-[10px] px-3 py-2 bg-[#111] text-white border border-gray-800 hover:border-white">
+                            MANAGE REASONS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Moderation Stats -->
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <div class="stat-card">
+                        <span class="stat-lbl">Pending Appeals</span>
+                        <span class="stat-val" id="stat-pending-appeals">--</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-lbl">Banned Users</span>
+                        <span class="stat-val text-red-500" id="stat-banned-users">--</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-lbl">Restricted Users</span>
+                        <span class="stat-val text-yellow-500" id="stat-restricted-users">--</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-lbl">Total Strikes Today</span>
+                        <span class="stat-val" id="stat-strikes-today">--</span>
+                    </div>
+                </div>
+
+                <!-- Tabs for moderation sections -->
+                <div class="flex gap-2 mb-6 border-b border-gray-800">
+                    <button onclick="switchModerationTab('appeals', this)" class="mod-tab-btn active px-4 py-2 text-[10px] font-mono uppercase border-b-2 border-white">
+                        Appeals Queue
+                    </button>
+                    <button onclick="switchModerationTab('reasons', this)" class="mod-tab-btn px-4 py-2 text-[10px] font-mono uppercase border-b-2 border-transparent text-gray-500">
+                        Violation Reasons
+                    </button>
+                    <button onclick="switchModerationTab('users', this)" class="mod-tab-btn px-4 py-2 text-[10px] font-mono uppercase border-b-2 border-transparent text-gray-500">
+                        User Management
+                    </button>
+                </div>
+
+                <!-- Appeals Queue -->
+                <div id="mod-appeals" class="moderation-subsection">
+                    <div class="border border-gray-800">
+                        <div class="grid grid-cols-6 p-3 bg-[#0a0a0a] border-b border-gray-800 text-[9px] font-mono text-gray-500 uppercase">
+                            <span>User</span>
+                            <span>Ban Reason</span>
+                            <span>Appeal Message</span>
+                            <span>Status</span>
+                            <span>Created</span>
+                            <span class="text-right">Actions</span>
+                        </div>
+                        <div id="appeals-list" class="text-gray-400">
+                            <div class="p-4 text-center">Loading appeals...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Violation Reasons -->
+                <div id="mod-reasons" class="moderation-subsection hidden">
+                    <div class="border border-gray-800">
+                        <div class="grid grid-cols-4 p-3 bg-[#0a0a0a] border-b border-gray-800 text-[9px] font-mono text-gray-500 uppercase">
+                            <span>Name</span>
+                            <span>Description</span>
+                            <span>Default Message</span>
+                            <span class="text-right">Actions</span>
+                        </div>
+                        <div id="violation-reasons-list" class="text-gray-400">
+                            <div class="p-4 text-center">Loading violation reasons...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Management -->
+                <div id="mod-users" class="moderation-subsection hidden">
+                    <div class="border border-gray-800">
+                        <div class="grid grid-cols-5 p-3 bg-[#0a0a0a] border-b border-gray-800 text-[9px] font-mono text-gray-500 uppercase">
+                            <span>User</span>
+                            <span>Strikes</span>
+                            <span>Status</span>
+                            <span>Restriction Expires</span>
+                            <span class="text-right">Actions</span>
+                        </div>
+                        <div id="moderation-users-list" class="text-gray-400">
+                            <div class="p-4 text-center">Loading users...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
         </main>
     </div>
 
@@ -504,6 +620,254 @@
             else if (id === 'releases') loadReleaseHistory();
             else if (id === 'users') loadUsers();
             else if (id === 'deploy') autoFillVersionAndBuild();
+            else if (id === 'moderation') {
+                loadModerationStats();
+                loadAppeals();
+                loadViolationReasons();
+                loadModerationUsers();
+            }
+        }
+
+        // ============================================
+        // MODERATION FUNCTIONS
+        // ============================================
+        function switchModerationTab(id, btn) {
+            document.querySelectorAll('.moderation-subsection').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.mod-tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`mod-${id}`).classList.remove('hidden');
+            btn.classList.add('active');
+        }
+
+        async function loadModerationStats() {
+            try {
+                // Get pending appeals count
+                const { count: pendingCount } = await supabase
+                    .from('ban_appeals')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'pending');
+
+                // Get banned users count
+                const { count: bannedCount } = await supabase
+                    .from('users')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('account_status', 'banned');
+
+                // Get restricted users count
+                const { count: restrictedCount } = await supabase
+                    .from('users')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('account_status', 'restricted');
+
+                // Get strikes today
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const { count: strikesToday } = await supabase
+                    .from('account_status_logs')
+                    .select('*', { count: 'exact', head: true })
+                    .gte('created_at', today.toISOString());
+
+                document.getElementById('stat-pending-appeals').textContent = pendingCount || 0;
+                document.getElementById('stat-banned-users').textContent = bannedCount || 0;
+                document.getElementById('stat-restricted-users').textContent = restrictedCount || 0;
+                document.getElementById('stat-strikes-today').textContent = strikesToday || 0;
+            } catch (error) {
+                console.error('Error loading moderation stats:', error);
+            }
+        }
+
+        async function loadAppeals() {
+            try {
+                const { data: appeals, error } = await supabase
+                    .from('ban_appeals')
+                    .select('*, users:user_id(handle, display_name)')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+
+                if (error) throw error;
+                renderAppeals(appeals || []);
+            } catch (error) {
+                console.error('Error loading appeals:', error);
+                document.getElementById('appeals-list').innerHTML = '<div class="p-4 text-center text-red-500">Error loading appeals</div>';
+            }
+        }
+
+        function renderAppeals(appeals) {
+            const container = document.getElementById('appeals-list');
+            if (!appeals || appeals.length === 0) {
+                container.innerHTML = '<div class="p-4 text-center text-gray-500">No appeals pending</div>';
+                return;
+            }
+
+            container.innerHTML = appeals.map(appeal => {
+                const user = appeal.users || {};
+                const statusColor = {
+                    'pending': '#6b7280',
+                    'under_review': '#f59e0b',
+                    'approved': '#10b981',
+                    'rejected': '#ef4444'
+                }[appeal.status] || '#6b7280';
+
+                return `
+                    <div class="grid grid-cols-6 p-4 border-b border-gray-900 items-center hover:bg-[#0a0a0a] transition">
+                        <div>
+                            <div class="text-xs font-bold text-white">${sanitize(user.display_name || 'Unknown')}</div>
+                            <div class="text-[9px] font-mono text-gray-500">@${sanitize(user.handle || 'unknown')}</div>
+                        </div>
+                        <div class="text-[10px] font-mono text-gray-400">${sanitize(appeal.ban_reason || 'N/A')}</div>
+                        <div class="text-[10px] font-mono text-gray-400 truncate" title="${sanitize(appeal.appeal_message)}">${sanitize(appeal.appeal_message.substring(0, 50))}...</div>
+                        <div>
+                            <span class="text-[9px] font-bold px-2 py-1" style="background-color: ${statusColor}20; color: ${statusColor}; border: 1px solid ${statusColor}40;">
+                                ${appeal.status.toUpperCase()}
+                            </span>
+                        </div>
+                        <div class="text-[10px] font-mono text-gray-500">${new Date(appeal.created_at).toLocaleDateString()}</div>
+                        <div class="text-right">
+                            ${appeal.status === 'pending' ? `
+                                <button onclick="approveAppeal('${appeal.id}')" class="text-[9px] font-mono text-green-500 underline hover:text-green-400 mr-2">APPROVE</button>
+                                <button onclick="rejectAppeal('${appeal.id}')" class="text-[9px] font-mono text-red-500 underline hover:text-red-400">REJECT</button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function approveAppeal(appealId) {
+            if (!confirm('Are you sure you want to approve this appeal? This will unban the user.')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('ban_appeals')
+                    .update({ 
+                        status: 'approved',
+                        reviewed_at: new Date().toISOString()
+                    })
+                    .eq('id', appealId);
+
+                if (error) throw error;
+                loadAppeals();
+                alert('Appeal approved. User account has been restored.');
+            } catch (error) {
+                console.error('Error approving appeal:', error);
+                alert('Error approving appeal: ' + error.message);
+            }
+        }
+
+        async function rejectAppeal(appealId) {
+            if (!confirm('Are you sure you want to reject this appeal? The user will remain banned.')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('ban_appeals')
+                    .update({ 
+                        status: 'rejected',
+                        reviewed_at: new Date().toISOString()
+                    })
+                    .eq('id', appealId);
+
+                if (error) throw error;
+                loadAppeals();
+                alert('Appeal rejected.');
+            } catch (error) {
+                console.error('Error rejecting appeal:', error);
+                alert('Error rejecting appeal: ' + error.message);
+            }
+        }
+
+        async function loadViolationReasons() {
+            try {
+                const { data: reasons, error } = await supabase
+                    .from('violation_reasons')
+                    .select('*')
+                    .order('name', { ascending: true });
+
+                if (error) throw error;
+                renderViolationReasons(reasons || []);
+            } catch (error) {
+                console.error('Error loading violation reasons:', error);
+                document.getElementById('violation-reasons-list').innerHTML = '<div class="p-4 text-center text-red-500">Error loading violation reasons</div>';
+            }
+        }
+
+        function renderViolationReasons(reasons) {
+            const container = document.getElementById('violation-reasons-list');
+            if (!reasons || reasons.length === 0) {
+                container.innerHTML = '<div class="p-4 text-center text-gray-500">No violation reasons found</div>';
+                return;
+            }
+
+            container.innerHTML = reasons.map(reason => `
+                <div class="grid grid-cols-4 p-4 border-b border-gray-900 items-center hover:bg-[#0a0a0a] transition">
+                    <div class="text-xs font-bold text-white">${sanitize(reason.name)}</div>
+                    <div class="text-[10px] font-mono text-gray-400">${sanitize(reason.description || 'N/A')}</div>
+                    <div class="text-[10px] font-mono text-gray-400">${sanitize(reason.default_message || 'N/A')}</div>
+                    <div class="text-right">
+                        <button onclick="editViolationReason(${reason.id})" class="text-[9px] font-mono text-white underline hover:text-gray-400">EDIT</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadModerationUsers() {
+            try {
+                const { data: users, error } = await supabase
+                    .from('users')
+                    .select('id, handle, display_name, strike_count, account_status, restriction_expiration_date')
+                    .in('account_status', ['restricted', 'banned'])
+                    .order('strike_count', { ascending: false })
+                    .limit(50);
+
+                if (error) throw error;
+                renderModerationUsers(users || []);
+            } catch (error) {
+                console.error('Error loading moderation users:', error);
+                document.getElementById('moderation-users-list').innerHTML = '<div class="p-4 text-center text-red-500">Error loading users</div>';
+            }
+        }
+
+        function renderModerationUsers(users) {
+            const container = document.getElementById('moderation-users-list');
+            if (!users || users.length === 0) {
+                container.innerHTML = '<div class="p-4 text-center text-gray-500">No restricted or banned users</div>';
+                return;
+            }
+
+            container.innerHTML = users.map(user => {
+                const statusColor = user.account_status === 'banned' ? '#ef4444' : '#f59e0b';
+                const expirationDate = user.restriction_expiration_date 
+                    ? new Date(user.restriction_expiration_date).toLocaleDateString()
+                    : 'N/A';
+
+                return `
+                    <div class="grid grid-cols-5 p-4 border-b border-gray-900 items-center hover:bg-[#0a0a0a] transition">
+                        <div>
+                            <div class="text-xs font-bold text-white">${sanitize(user.display_name || 'Unknown')}</div>
+                            <div class="text-[9px] font-mono text-gray-500">@${sanitize(user.handle || 'unknown')}</div>
+                        </div>
+                        <div class="text-[10px] font-mono text-gray-400">${user.strike_count || 0}/3</div>
+                        <div>
+                            <span class="text-[9px] font-bold px-2 py-1" style="background-color: ${statusColor}20; color: ${statusColor}; border: 1px solid ${statusColor}40;">
+                                ${user.account_status.toUpperCase()}
+                            </span>
+                        </div>
+                        <div class="text-[10px] font-mono text-gray-400">${expirationDate}</div>
+                        <div class="text-right">
+                            <button onclick="manageUser('${user.id}')" class="text-[9px] font-mono text-white underline hover:text-gray-400">MANAGE</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function manageUser(userId) {
+            // TODO: Implement user management modal
+            alert('User management feature coming soon');
+        }
+
+        function editViolationReason(reasonId) {
+            // TODO: Implement violation reason editor
+            alert('Violation reason editor coming soon');
         }
 
         // ============================================
