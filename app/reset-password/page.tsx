@@ -1,13 +1,7 @@
 'use client';
 
-import type { Metadata } from 'next';
 import { FormEvent, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-
-export const metadata: Metadata = {
-  title: 'KEMET // RESET CREDENTIALS',
-  description: 'Set a new private passkey for your Kemet node.',
-};
 
 function hasRecoveryParams() {
   if (typeof window === 'undefined') return false;
@@ -182,4 +176,3 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
-
