@@ -3,13 +3,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-function hasRecoveryParams() {
-  if (typeof window === 'undefined') return false;
-  const hash = window.location.hash || '';
-  const search = window.location.search || '';
-  return hash.includes('type=recovery') || search.includes('type=recovery');
-}
-
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -19,27 +12,65 @@ export default function ResetPasswordPage() {
   const [hasToken, setHasToken] = useState(true);
 
   useEffect(() => {
-    const hasParams = hasRecoveryParams();
-    setHasToken(hasParams);
-
-    if (!hasParams || typeof window === 'undefined') {
+    if (typeof window === 'undefined') {
       return;
     }
 
-    const url = new URL(window.location.href);
-    const code = url.searchParams.get('code');
+    const hashRaw = window.location.hash.startsWith('#')
+      ? window.location.hash.slice(1)
+      : window.location.hash;
+    const hashParams = new URLSearchParams(hashRaw);
+    const searchParams = new URLSearchParams(window.location.search);
 
-    if (!code) {
+    const errorParam =
+      hashParams.get('error') || searchParams.get('error');
+    const errorDescriptionParam =
+      hashParams.get('error_description') ||
+      searchParams.get('error_description');
+
+    if (errorParam) {
+      setHasToken(false);
+      setError(
+        errorDescriptionParam ||
+          'This recovery link is invalid or has expired. Request a new link from the app.'
+      );
+      return;
+    }
+
+    const typeParam =
+      hashParams.get('type') || searchParams.get('type');
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+
+    const hasAnyParams =
+      !!typeParam || !!accessToken || !!refreshToken;
+    setHasToken(hasAnyParams);
+
+    if (typeParam !== 'recovery' || !accessToken || !refreshToken) {
       return;
     }
 
     const client = createClient();
 
-    client.auth.exchangeCodeForSession(code).catch(() => {
-      setError(
-        'This recovery link is invalid or has expired. Request a new link from the app.'
-      );
-    });
+    client.auth
+      .setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      })
+      .then(({ error: sessionError }) => {
+        if (sessionError) {
+          setError(
+            'This recovery link is invalid or has expired. Request a new link from the app.'
+          );
+        } else {
+          setSuccess('Recovery link verified. Set your new passkey.');
+        }
+      })
+      .catch(() => {
+        setError(
+          'This recovery link is invalid or has expired. Request a new link from the app.'
+        );
+      });
   }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
