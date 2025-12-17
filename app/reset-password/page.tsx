@@ -79,8 +79,54 @@ export default function ResetPasswordPage() {
     const trimmedPassword = password || '';
     const trimmedConfirm = confirmPassword || '';
 
-    if (trimmedPassword.length < 6) {
-      setError('Passkey must be at least 6 characters.');
+    const disallowed = [
+      '123456',
+      '123456789',
+      '123123',
+      '000000',
+      '111111',
+      'password',
+      'qwerty',
+      'letmein',
+      'admin',
+    ];
+
+    if (trimmedPassword.length < 12) {
+      setError(
+        'Passkey must be at least 12 characters with upper, lower, number, and symbol.'
+      );
+      setSuccess('');
+      return;
+    }
+
+    const hasUpper = /[A-Z]/.test(trimmedPassword);
+    const hasLower = /[a-z]/.test(trimmedPassword);
+    const hasNumber = /[0-9]/.test(trimmedPassword);
+    const hasSymbol = /[^A-Za-z0-9]/.test(trimmedPassword);
+
+    if (!hasUpper || !hasLower || !hasNumber || !hasSymbol) {
+      setError(
+        'Passkey must include uppercase, lowercase, number, and symbol characters.'
+      );
+      setSuccess('');
+      return;
+    }
+
+    if (/\s/.test(trimmedPassword)) {
+      setError('Passkey cannot contain spaces.');
+      setSuccess('');
+      return;
+    }
+
+    if (/(.)\1{3,}/.test(trimmedPassword)) {
+      setError('Passkey cannot contain long sequences of repeated characters.');
+      setSuccess('');
+      return;
+    }
+
+    const lowered = trimmedPassword.toLowerCase();
+    if (disallowed.some((value) => lowered.includes(value))) {
+      setError('Passkey is too weak or common. Choose a more complex passkey.');
       setSuccess('');
       return;
     }
