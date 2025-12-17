@@ -19,7 +19,27 @@ export default function ResetPasswordPage() {
   const [hasToken, setHasToken] = useState(true);
 
   useEffect(() => {
-    setHasToken(hasRecoveryParams());
+    const hasParams = hasRecoveryParams();
+    setHasToken(hasParams);
+
+    if (!hasParams || typeof window === 'undefined') {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get('code');
+
+    if (!code) {
+      return;
+    }
+
+    const client = createClient();
+
+    client.auth.exchangeCodeForSession(code).catch(() => {
+      setError(
+        'This recovery link is invalid or has expired. Request a new link from the app.'
+      );
+    });
   }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
