@@ -402,4 +402,201 @@ body {
   50% { opacity: 0.5; transform: scale(0.8); }
 }
 
+.protocol-doc .doc-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+
+@media (max-width: 1024px) {
+  .protocol-doc .doc-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.protocol-doc .sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  border-right: 1px solid #222;
+  padding: 40px 24px;
+  overflow-y: auto;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  z-index: 30;
+}
+
+@media (max-width: 1024px) {
+  .protocol-doc .sidebar {
+    display: none;
+  }
+}
+
+.protocol-doc .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #555;
+  padding: 10px 0;
+  transition: 0.2s;
+  letter-spacing: 0.05em;
+}
+
+.protocol-doc .nav-item:hover,
+.protocol-doc .nav-item.active {
+  color: white;
+  transform: translateX(4px);
+}
+
+.protocol-doc .nav-item.active {
+  color: var(--kemet-green);
+  font-weight: bold;
+}
+
+.protocol-doc .nav-item::before {
+  content: '>';
+  opacity: 0;
+  margin-right: -8px;
+  transition: 0.2s;
+}
+
+.protocol-doc .nav-item.active::before {
+  opacity: 1;
+  margin-right: 0;
+}
+
+.protocol-doc .doc-title {
+  font-size: 4rem;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+}
+
+@media (max-width: 768px) {
+  .protocol-doc .doc-title {
+    font-size: 2.5rem;
+  }
+}
+
+.protocol-doc .sec-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #444;
+  border: 1px solid #222;
+  padding: 2px 6px;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+.protocol-doc h2 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: white;
+  margin-bottom: 1.5rem;
+  padding-top: 4rem;
+  border-top: 1px solid #222;
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.protocol-doc h3 {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #fff;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.protocol-doc p {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 0.95rem;
+  color: #888;
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  max-width: 65ch;
+}
+
+.protocol-doc strong {
+  color: #ccc;
+  font-weight: 600;
+}
+
+.protocol-doc ul {
+  list-style: none;
+  margin-bottom: 1.5rem;
+}
+
+.protocol-doc li {
+  position: relative;
+  padding-left: 20px;
+  color: #888;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+
+.protocol-doc li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 4px;
+  height: 4px;
+  background: #333;
+}
+
+.protocol-doc .data-block {
+  background: #050505;
+  border: 1px solid #222;
+  padding: 20px;
+  margin: 20px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #666;
+  position: relative;
+}
+
+.protocol-doc .data-block p {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  margin: 0;
+  color: #888;
+}
+
+.protocol-doc .data-block::before {
+  content: 'Notice of Dynamic Service';
+  position: absolute;
+  top: -8px;
+  left: 10px;
+  background: #000;
+  padding: 0 8px;
+  font-size: 9px;
+  color: white;
+}
+
+.protocol-doc .block-warn {
+  border-color: #7f1d1d;
+  background: rgba(69, 10, 10, 0.1);
+}
+
+.protocol-doc .block-warn::before {
+  content: 'CRITICAL_WARNING';
+  color: #ef4444;
+}
+
+.protocol-doc .block-warn p {
+  color: #fca5a5;
+}
+
 
